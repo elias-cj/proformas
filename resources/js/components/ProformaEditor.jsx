@@ -7,6 +7,8 @@ import axios from "axios";
  */
 const ProformaEditor = () => {
     const [paperSize, setPaperSize] = useState("A4");
+    const [margins, setMargins] = useState({ top: 5.0, bottom: 5.0, left: 2.0, right: 2.0 });
+    const [globalFont, setGlobalFont] = useState("Inter");
     const [templates, setTemplates] = useState([]);
     const [selectedTemplate, setSelectedTemplate] = useState("");
     const [backgroundUrl, setBackgroundUrl] = useState("");
@@ -14,6 +16,7 @@ const ProformaEditor = () => {
     const [discount, setDiscount] = useState(0);
     const [customerName, setCustomerName] = useState("");
     const [customerDoc, setCustomerDoc] = useState("");
+    const [focusedElement, setFocusedElement] = useState(null); // { id, type }
 
     // Initial empty row
     const emptyRow = () => ({
@@ -22,6 +25,17 @@ const ProformaEditor = () => {
         quantity: "",
         unit_price: "",
         total: 0,
+        style: {
+            bold: false,
+            italic: false,
+            underline: false,
+            strike: false,
+            align: "left",
+            fontSize: "14px",
+            font: globalFont, // Usa la global como base inicial
+            color: "#1e293b",
+            lineHeight: "1.5"
+        }
     });
     const [details, setDetails] = useState([emptyRow()]);
 
@@ -79,7 +93,10 @@ const ProformaEditor = () => {
             }
         } catch (error) {
             console.error("Upload failed", error);
-            alert("Error al subir el membrete. Revisa la consola.");
+            const errorMsg = error.response?.data?.messages 
+                ? Object.values(error.response.data.messages).flat().join("\n")
+                : "Error desconocido al subir el archivo.";
+            alert(`❌ Error al subir el membrete:\n${errorMsg}`);
         }
     };
 
@@ -119,10 +136,78 @@ const ProformaEditor = () => {
         backgroundSize: "100% 100%",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
+        fontFamily: `'${globalFont}', sans-serif`,
+    };
+
+    const updateItemStyle = (id, styleKey, value) => {
+        setDetails(details.map(row => {
+            if (row.id === id) {
+                // Aseguramos que el objeto style exista para filas viejas
+                const currentStyle = row.style || emptyRow().style;
+                return { ...row, style: { ...currentStyle, [styleKey]: value } };
+            }
+            return row;
+        }));
+    };
+
+    const FloatingToolbar = () => {
+        if (!focusedElement) return null;
+        const row = details.find(r => r.id === focusedElement.id);
+        if (!row) return null;
+
+        return (
+            <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-white/70 backdrop-blur-2xl border border-white/50 shadow-2xl rounded-2xl p-2 flex items-center gap-1 animate-in fade-in slide-in-from-top-4 duration-500">
+                <select 
+                    value={row.style.fontSize} 
+                    onChange={e => updateItemStyle(row.id, 'fontSize', e.target.value)}
+                    className="bg-transparent border-none text-[10px] font-bold focus:ring-0 cursor-pointer"
+                >
+                    {['10px', '12px', '14px', '16px', '18px', '20px'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <div className="w-px h-4 bg-gray-200 mx-1" />
+                <select 
+                    value={row.style?.font || globalFont} 
+                    onChange={e => updateItemStyle(row.id, 'font', e.target.value)}
+                    className="bg-transparent border-none text-[10px] font-bold focus:ring-0 cursor-pointer max-w-[120px] overflow-hidden text-ellipsis"
+                    style={{ fontFamily: row.style?.font ? `'${row.style.font}', sans-serif` : 'inherit' }}
+                >
+                    {[
+                        'Arial', 'Arial Black', 'Times New Roman',
+                        'Inter', 'Montserrat', 'Roboto', 'Open Sans', 'Poppins', 
+                        'Playfair Display', 'Lora', 'Oswald', 
+                        'Dancing Script', 'Pacifico'
+                    ].map(f => (
+                        <option key={f} value={f} style={{ fontFamily: `'${f}', sans-serif` }}>{f}</option>
+                    ))}
+                </select>
+                <div className="w-px h-4 bg-gray-200 mx-1" />
+                <button onClick={() => updateItemStyle(row.id, 'bold', !row.style.bold)} className={`p-2 rounded-lg transition-all ${row.style.bold ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`}><b>B</b></button>
+                <button onClick={() => updateItemStyle(row.id, 'italic', !row.style.italic)} className={`p-2 rounded-lg transition-all ${row.style.italic ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`}><i>I</i></button>
+                <button onClick={() => updateItemStyle(row.id, 'underline', !row.style.underline)} className={`p-2 rounded-lg transition-all ${row.style.underline ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`}><u>U</u></button>
+                <button onClick={() => updateItemStyle(row.id, 'strike', !row.style.strike)} className={`p-2 rounded-lg transition-all ${row.style.strike ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`}><s>S</s></button>
+                <div className="w-px h-4 bg-gray-200 mx-1" />
+                <button onClick={() => updateItemStyle(row.id, 'align', 'left')} className={`p-2 rounded-lg ${row.style.align === 'left' ? 'bg-indigo-100' : ''}`}>⇤</button>
+                <button onClick={() => updateItemStyle(row.id, 'align', 'center')} className={`p-2 rounded-lg ${row.style.align === 'center' ? 'bg-indigo-100' : ''}`}>↔</button>
+                <button onClick={() => updateItemStyle(row.id, 'align', 'right')} className={`p-2 rounded-lg ${row.style.align === 'right' ? 'bg-indigo-100' : ''}`}>⇥</button>
+                <div className="w-px h-4 bg-gray-200 mx-1" />
+                <select 
+                    value={row.style.lineHeight} 
+                    onChange={e => updateItemStyle(row.id, 'lineHeight', e.target.value)}
+                    className="bg-transparent border-none text-[10px] font-bold focus:ring-0 cursor-pointer"
+                >
+                    {['1.0', '1.2', '1.5', '2.0'].map(lh => <option key={lh} value={lh}>{lh}</option>)}
+                </select>
+                <div className="w-px h-4 bg-gray-200 mx-1" />
+                <input type="color" value={row.style.color} onChange={e => updateItemStyle(row.id, 'color', e.target.value)} className="w-6 h-6 border-none bg-transparent cursor-pointer rounded-full overflow-hidden" />
+            </div>
+        );
     };
 
     return (
         <div className="flex flex-col lg:flex-row w-full min-h-screen bg-[#f8fafc] font-sans selection:bg-indigo-100 p-4 lg:p-8 gap-8">
+            {/* Canva Style Toolbar */}
+            <FloatingToolbar />
+
             {/* Control Panel (Glassmorphism) */}
             <aside className="w-full lg:w-96 flex flex-col gap-6">
                 <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2rem] p-8 sticky top-8 animate-in fade-in slide-in-from-left-4 duration-700">
@@ -184,6 +269,57 @@ const ProformaEditor = () => {
                             </div>
                         </section>
 
+                        <section className="bg-white/50 rounded-2xl p-5 border border-white/50">
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-4">Márgenes y Diseño</label>
+                            
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                                <div>
+                                    <label className="text-[10px] text-gray-400 font-bold block mb-1">Superior (cm)</label>
+                                    <input 
+                                        type="number" step="0.1" min="0" max="15" 
+                                        value={margins.top === 0 ? "" : margins.top} 
+                                        onChange={e => setMargins({...margins, top: e.target.value === "" ? 0 : parseFloat(e.target.value)})} 
+                                        placeholder="0"
+                                        className="w-full bg-white border-none rounded-lg py-1 px-2 text-[11px] font-bold shadow-sm focus:ring-1 focus:ring-indigo-500 hover:bg-gray-50 transition-colors" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-gray-400 font-bold block mb-1">Inferior (cm)</label>
+                                    <input 
+                                        type="number" step="0.1" min="0" max="15" 
+                                        value={margins.bottom === 0 ? "" : margins.bottom} 
+                                        onChange={e => setMargins({...margins, bottom: e.target.value === "" ? 0 : parseFloat(e.target.value)})} 
+                                        placeholder="0"
+                                        className="w-full bg-white border-none rounded-lg py-1 px-2 text-[11px] font-bold shadow-sm focus:ring-1 focus:ring-indigo-500 hover:bg-gray-50 transition-colors" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-gray-400 font-bold block mb-1">Izquierdo (cm)</label>
+                                    <input 
+                                        type="number" step="0.1" min="0" max="10" 
+                                        value={margins.left === 0 ? "" : margins.left} 
+                                        onChange={e => setMargins({...margins, left: e.target.value === "" ? 0 : parseFloat(e.target.value)})} 
+                                        placeholder="0"
+                                        className="w-full bg-white border-none rounded-lg py-1 px-2 text-[11px] font-bold shadow-sm focus:ring-1 focus:ring-indigo-500 hover:bg-gray-50 transition-colors" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-gray-400 font-bold block mb-1">Derecho (cm)</label>
+                                    <input 
+                                        type="number" step="0.1" min="0" max="10" 
+                                        value={margins.right === 0 ? "" : margins.right} 
+                                        onChange={e => setMargins({...margins, right: e.target.value === "" ? 0 : parseFloat(e.target.value)})} 
+                                        placeholder="0"
+                                        className="w-full bg-white border-none rounded-lg py-1 px-2 text-[11px] font-bold shadow-sm focus:ring-1 focus:ring-indigo-500 hover:bg-gray-50 transition-colors" 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-4">
+                                <p className="text-[10px] text-gray-400 font-medium italic">Selecciona un elemento para cambiar su fuente individualmente.</p>
+                            </div>
+                        </section>
+
                         <section className="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100/50">
                             <h3 className="text-sm font-bold text-indigo-900 mb-4">Métricas Financieras</h3>
                             <div className="space-y-3">
@@ -208,9 +344,20 @@ const ProformaEditor = () => {
                             </div>
                         </section>
 
-                        <button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
-                            <span>REGISTRAR PROFORMA</span>
-                        </button>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                <span>REGISTRAR PROFORMA</span>
+                            </button>
+                            <button 
+                                onClick={() => window.print()}
+                                className="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                <span>IMPRIMIR</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </aside>
@@ -222,7 +369,15 @@ const ProformaEditor = () => {
                     className="bg-white shadow-[0_40px_100px_rgba(0,0,0,0.15)] rounded-sm overflow-hidden relative transition-all duration-700 hover:shadow-[0_60px_150px_rgba(0,0,0,0.2)] rotate-0 hover:-rotate-[0.1deg]"
                 >
                     {/* Glass Overlay Contenido */}
-                    <div className="relative z-10 w-full min-h-full flex flex-col p-[20mm] pt-[50mm]">
+                    <div 
+                        className="relative z-10 w-full min-h-full flex flex-col"
+                        style={{ 
+                            paddingTop: `${margins.top}cm`, 
+                            paddingBottom: `${margins.bottom}cm`, 
+                            paddingLeft: `${margins.left}cm`, 
+                            paddingRight: `${margins.right}cm` 
+                        }}
+                    >
                         {/* Header Info */}
                         <div className="flex justify-between items-end mb-16">
                             <div>
@@ -266,9 +421,20 @@ const ProformaEditor = () => {
                                             <td className="py-5 text-center text-[10px] font-black text-slate-300">{idx + 1}</td>
                                             <td className="py-5">
                                                 <input 
-                                                    className="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 px-0 placeholder:text-slate-300 placeholder:italic"
+                                                    className="w-full bg-transparent border-none focus:ring-0 px-0 placeholder:text-slate-300 placeholder:italic transition-all"
+                                                    style={{
+                                                        fontWeight: row.style?.bold ? '900' : 'bold',
+                                                        fontStyle: row.style?.italic ? 'italic' : 'normal',
+                                                        textDecoration: `${row.style?.underline ? 'underline' : ''} ${row.style?.strike ? 'line-through' : ''}`.trim(),
+                                                        textAlign: row.style?.align || 'left',
+                                                        fontSize: row.style?.fontSize || '14px',
+                                                        fontFamily: row.style?.font ? `'${row.style.font}', sans-serif` : `${globalFont}, sans-serif`,
+                                                        color: row.style?.color || '#1e293b',
+                                                        lineHeight: row.style?.lineHeight || '1.5'
+                                                    }}
                                                     placeholder="Ej. Mantenimiento preventivo de motores..."
                                                     value={row.description}
+                                                    onFocus={() => setFocusedElement({ id: row.id, type: 'item' })}
                                                     onChange={e => handleDetailChange(row.id, "description", e.target.value)}
                                                 />
                                             </td>

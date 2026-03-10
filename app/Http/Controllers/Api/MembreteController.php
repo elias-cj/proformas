@@ -15,7 +15,7 @@ class MembreteController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'file' => 'required|image|mimes:png,jpg,jpeg|max:2048',
+            'file' => 'required|image|mimes:png,jpg,jpeg|max:10240',
         ]);
 
         if ($validator->fails()) {
