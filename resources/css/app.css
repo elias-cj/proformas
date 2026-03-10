@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@layer base {
+    :root {
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --secondary: #a855f7;
+        --accent: #f43f5e;
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.2);
+    }
+
+    body {
+        @apply bg-[#f8fafc] text-[#1e293b];
+        font-family:
+            "Inter",
+            system-ui,
+            -apple-system,
+            sans-serif;
+    }
+}
+
+@layer components {
+    .glass-morphism {
+        @apply backdrop-blur-xl bg-white/70 border border-white/20 shadow-xl;
+    }
+
+    .premium-card {
+        @apply rounded-3xl p-8 backdrop-blur-xl bg-white/70 border border-white/20 shadow-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+    }
+}
