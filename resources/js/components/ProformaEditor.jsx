@@ -293,7 +293,7 @@ const ProformaEditor = () => {
         const A4_HEIGHT = 1123; // 297mm
         const CM_TO_PX = 37.8;
         const HEADER_ESTIMATED = 120; // Espacio real ocupado por Advisor/Fecha
-        const LOGO_RESERVE = 110;     // Subido 1cm más (era 150)
+        const LOGO_RESERVE = 34;      // Subido 1cm más (era 72)
         const TABLE_HEADER = 35;
         const FOOTER_TOTAL = 80;      
         const TERMS_BOX = 300; 
@@ -312,11 +312,19 @@ const ProformaEditor = () => {
             // Si es el último ítem, comprobamos si cabe él Y el Total
             const spaceNeeded = isLastTotalRow ? (h + FOOTER_TOTAL) : h;
 
-            const shouldJumpByCount = isFirstPage && index === 13; 
+            const isSecondPage = result.length === 1;
+            const shouldJumpP1ByCount = isFirstPage && index === 13; 
+            const shouldJumpP2ByCount = isSecondPage && index === 32;
             
-            // Regla estricta: En Pág 1 solo saltamos si llegamos al ítem 14 (índice 13).
-            // Ignoramos el salto por altura en la Pág 1 para asegurar que quepan los 13 ítems.
-            const jump = isFirstPage ? shouldJumpByCount : (currentHeight + spaceNeeded > limit);
+            // Reglas estrictas por conteo para las primeras dos hojas
+            let jump = false;
+            if (isFirstPage) {
+                jump = shouldJumpP1ByCount;
+            } else if (isSecondPage) {
+                jump = shouldJumpP2ByCount;
+            } else {
+                jump = currentHeight + spaceNeeded > limit;
+            }
 
             if (jump && currentPageRows.length > 0) {
                 result.push(currentPageRows);
@@ -342,6 +350,8 @@ const ProformaEditor = () => {
                     result.push([]);
                 }
                 // Ignoramos el espacio físico en la Pág 1 para evitar saltos prematuros al ítem 4
+            } else if (result.length === 2 && details.length < 27) {
+                // REGLA PÁG 2: No saltar términos hasta el ítem 27 (ignorar espacio físico)
             } else if (currentHeight + FOOTER_TOTAL + TERMS_BOX > limit) {
                 // Salto por espacio físico en hojas subsecuentes
                 result.push([]);
@@ -628,7 +638,7 @@ const ProformaEditor = () => {
                             )}
 
                             {/* Logo Spacer para hojas subsecuentes (evita solapamiento) */}
-                            {pageIdx > 0 && <div style={{ height: '110px' }} className="w-full flex-shrink-0" />}
+                            {pageIdx > 0 && <div style={{ height: '34px' }} className="w-full flex-shrink-0" />}
 
                             {/* TABLA DE ÍTEMS: Paginada */}
                             <div className="flex-1">
