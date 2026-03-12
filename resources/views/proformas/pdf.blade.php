@@ -5,29 +5,61 @@
     <title>Proforma {{ $proforma->number }}</title>
     <style>
         @page {
-            margin: 0mm;
+            margin: 45mm 15mm 35mm 15mm;
             size: A4 portrait;
         }
+
+        header {
+            position: fixed;
+            top: -35mm;
+            left: 0mm;
+            right: 0mm;
+            height: 30mm;
+            border-bottom: 1px solid #e2e8f0;
+            z-index: -50;
+        }
+
+        footer {
+            position: fixed;
+            bottom: -25mm;
+            left: 0mm;
+            right: 0mm;
+            height: 25mm;
+            border-top: 1px solid #e2e8f0;
+            z-index: -50;
+        }
+
+        /* Ocultar el header fijo en la primera página */
+        .cover-header-page1 {
+            position: absolute;
+            top: -45mm;
+            left: -15mm;
+            right: -15mm;
+            height: 45mm;
+            background: white;
+            z-index: 100;
+        }
+
+        /* Estilos base */
 
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             margin: 0;
             padding: 0;
-            font-size: 14px;
+            font-size: 12px;
             color: #333;
         }
 
         .background-image {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -10;
+            z-index: -100;
         }
 
         .content {
-            padding: 40mm 20mm 30mm 20mm; /* Acomodar según el membrete (logo/header) */
             position: relative;
             z-index: 10;
         }
@@ -57,6 +89,9 @@
             background-color: #f7fafc;
             font-weight: bold;
         }
+
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
 
         .text-right {
             text-align: right;
@@ -90,6 +125,10 @@
             color: #718096;
             clear: both;
         }
+
+        .pagenum:before {
+            content: counter(page);
+        }
     </style>
 </head>
 <body>
@@ -97,18 +136,56 @@
         <img src="{{ public_path('storage/' . $proforma->template->file_path) }}" class="background-image" alt="Membrete">
     @endif
 
+    <header>
+        <div style="font-size: 10px; color: #718096; padding-top: 10px;">
+            <div style="float: left;">
+                <strong>{{ $company->name ?? 'Mi Empresa' }}</strong> - Proforma #{{ $proforma->number }}
+            </div>
+            <div style="float: right;">
+                Fecha: {{ $proforma->date }}
+            </div>
+            <div style="clear: both;"></div>
+        </div>
+    </header>
+
+    <footer>
+        <div style="font-size: 9px; color: #718096; padding-top: 5px;">
+            <p style="margin: 0; padding-bottom: 2px;"><strong>Términos y Condiciones:</strong></p>
+            <div style="line-height: 1.1;">
+                {!! nl2br(e($company->document_footer ?? 'Condiciones generales de venta aplicables.')) !!}
+            </div>
+            <div style="text-align: right; margin-top: 5px; font-size: 10px;">
+                Página <span class="pagenum"></span>
+            </div>
+        </div>
+    </footer>
+
     <div class="content">
-        <div class="header">
-            <h1>PROFORMA</h1>
-            <p><strong>Nro:</strong> {{ $proforma->number }}</p>
-            <p><strong>Fecha:</strong> {{ $proforma->date }}</p>
-            <p><strong>Válida por:</strong> {{ $proforma->validity_days }} días</p>
+        <div class="cover-header-page1"></div>
+        
+        <div class="header" style="margin-top: -30px; margin-bottom: 30px;">
+            <div style="float: left; width: 60%;">
+                <h1 style="color: #2d3748; margin-bottom: 5px;">PROFORMA</h1>
+                <p style="font-size: 1.2em; color: #4a5568;">#{{ $proforma->number }}</p>
+            </div>
+            <div style="float: right; text-align: right; font-size: 0.9em;">
+                <p><strong>Fecha Emisión:</strong> {{ $proforma->date }}</p>
+                <p><strong>Días Validez:</strong> {{ $proforma->validity_days }} días</p>
+            </div>
+            <div style="clear: both;"></div>
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <h3>Cliente</h3>
-            <p><strong>Nombre/Razón Social:</strong> {{ $proforma->customer->name_reason_social }}</p>
-            <p><strong>Doc:</strong> {{ $proforma->customer->document_number }}</p>
+        <div style="margin-bottom: 30px; border: 1px solid #edf2f7; padding: 15px; border-radius: 5px;">
+            <h3 style="margin-top: 0; border-bottom: 1px solid #edf2f7; padding-bottom: 5px;">Información del Cliente</h3>
+            <div style="float: left; width: 50%;">
+                <p><strong>Nombre:</strong> {{ $proforma->customer->name_reason_social }}</p>
+                <p><strong>Doc / NIT:</strong> {{ $proforma->customer->document_number }}</p>
+            </div>
+            <div style="float: right; width: 50%; text-align: right;">
+                <p><strong>Dirección:</strong> {{ $proforma->customer->address ?? 'N/A' }}</p>
+                <p><strong>Teléfono:</strong> {{ $proforma->customer->phone ?? 'N/A' }}</p>
+            </div>
+            <div style="clear: both;"></div>
         </div>
 
         <table class="details-table">

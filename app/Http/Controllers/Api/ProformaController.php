@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use App\Models\Company;
 use App\Models\Proforma;
 use App\Models\WorkOrder;
 use App\Http\Requests\StoreProformaRequest;
@@ -94,12 +95,13 @@ class ProformaController extends Controller
     public function generatePdf(Proforma $proforma)
     {
         $proforma->load('customer', 'details', 'template');
+        $company = Company::first();
         
-        $pdf = \Dompdf\Dompdf::class; // Facade can be used if wrapper installed, else manual approach.
+        // Facade can be used if wrapper installed, else manual approach.
         // We will use standard barryvdh/laravel-dompdf if preferred, or manual Dompdf instantiation.
         // To keep it simple, since we did composer require dompdf/dompdf (native):
         
-        $html = view('proformas.pdf', compact('proforma'))->render();
+        $html = view('proformas.pdf', compact('proforma', 'company'))->render();
         
         $dompdf = new \Dompdf\Dompdf();
         $dompdf->loadHtml($html);

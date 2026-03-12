@@ -64,7 +64,7 @@ const loadGoogleFonts = () => {
  * ProformaEditor - Premium Edition
  * Features: Glassmorphism, Dynamic Gradients, Interactive Rows, Live Math, Custom Letterhead.
  */
-const ProformaEditor = () => {
+const ProformaEditor = ({ onBack }) => {
     const [paperSize, setPaperSize] = useState("A4");
     const [margins, setMargins] = useState({ top: 5.0, bottom: 3.0, left: 2.0, right: 2.0 });
     const [globalFont, setGlobalFont] = useState("Inter");
@@ -454,6 +454,18 @@ const ProformaEditor = () => {
 
             {/* Left Sidebar (Configuración General) */}
             <aside className="w-full xl:w-72 flex flex-col gap-6 no-print">
+                {onBack && (
+                    <button 
+                        onClick={onBack}
+                        className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold transition-colors w-fit bg-white/50 backdrop-blur-md px-4 py-2 rounded-xl border border-white/60 shadow-sm"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver al Historial
+                    </button>
+                )}
+
                 <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2rem] p-8 sticky top-8 animate-in fade-in slide-in-from-left-4 duration-700">
                     <h2 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-6">
                         Diseño Premium
