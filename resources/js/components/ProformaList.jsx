@@ -14,16 +14,16 @@ export default function ProformaList({ onNavigateToEditor }) {
     <div className="p-8 w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* Header */}
-      <div className="flex justify-between items-center mb-10 bg-white/50 backdrop-blur-md p-6 rounded-[2rem] shadow-xl border border-white/60">
+      <div className="flex justify-between items-center mb-10">
         <div>
-          <h2 className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Proformas
+          <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+            Historial de Incidencias
           </h2>
-          <p className="text-slate-500 font-medium mt-1">Historial y gestión de cotizaciones</p>
+          <p className="text-slate-500 dark:text-neutral-400 font-medium mt-1">Registro detallado y búsqueda de eventos reportados.</p>
         </div>
         <button 
           onClick={onNavigateToEditor}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold tracking-wide shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all active:scale-95 flex gap-2 items-center"
+          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-[var(--accent-shadow)] transition-all active:scale-95 flex gap-2 items-center text-sm"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -33,11 +33,11 @@ export default function ProformaList({ onNavigateToEditor }) {
       </div>
 
       {/* Table Section */}
-      <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100">
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100 dark:border-neutral-800 transition-all duration-300">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-widest font-bold">
+              <tr className="bg-slate-50 dark:bg-neutral-900/50 border-b border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-500 text-xs uppercase tracking-widest font-bold">
                 <th className="py-5 px-6">Nº Cotización</th>
                 <th className="py-5 px-6">Cliente</th>
                 <th className="py-5 px-6">Fecha</th>
@@ -46,29 +46,29 @@ export default function ProformaList({ onNavigateToEditor }) {
                 <th className="py-5 px-6 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-neutral-800">
               {proformas.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50/50 transition-colors group">
+                <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-neutral-800/30 transition-colors group">
                   <td className="py-4 px-6">
-                    <span className="font-bold text-slate-800">#{p.number}</span>
+                    <span className="font-bold text-slate-800 dark:text-white">#{p.number}</span>
                   </td>
-                  <td className="py-4 px-6 font-semibold text-slate-700">{p.client}</td>
-                  <td className="py-4 px-6 text-slate-500">{p.date}</td>
-                  <td className="py-4 px-6 font-bold text-slate-900">{p.total}</td>
+                  <td className="py-4 px-6 font-semibold text-slate-700 dark:text-neutral-300">{p.client}</td>
+                  <td className="py-4 px-6 text-slate-500 dark:text-neutral-500">{p.date}</td>
+                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">{p.total}</td>
                   <td className="py-4 px-6 text-center">
-                    <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                      p.status === 'Borrador' ? 'bg-slate-100 text-slate-600' :
-                      p.status === 'Enviada' ? 'bg-sky-100 text-sky-600' :
-                      'bg-emerald-100 text-emerald-600'
+                    <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-tight ${
+                      p.status === 'Borrador' ? 'bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400' :
+                      p.status === 'Enviada' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' :
+                      'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
                     }`}>
                       {p.status}
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-3">
                       {/* Ver Proforma */}
                       <button 
-                        className="p-2 text-sky-500 hover:bg-sky-50 rounded-lg transition-colors" 
+                        className="text-slate-400 hover:text-blue-600 transition-colors" 
                         title="Ver Proforma"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -80,7 +80,7 @@ export default function ProformaList({ onNavigateToEditor }) {
                       {/* Editar */}
                       <button 
                         onClick={onNavigateToEditor}
-                        className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors" 
+                        className="text-slate-400 hover:text-[var(--accent)] transition-colors" 
                         title="Editar"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -90,7 +90,7 @@ export default function ProformaList({ onNavigateToEditor }) {
                       
                       {/* Generar/Descargar PDF */}
                       <button 
-                        className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" 
+                        className="text-slate-400 hover:text-blue-600 transition-colors" 
                         title="PDF"
                       >
                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,7 +100,7 @@ export default function ProformaList({ onNavigateToEditor }) {
 
                       {/* Eliminar */}
                       <button 
-                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" 
+                        className="text-slate-400 hover:text-rose-500 transition-colors" 
                         title="Eliminar"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -115,7 +115,7 @@ export default function ProformaList({ onNavigateToEditor }) {
           </table>
           
           {proformas.length === 0 && (
-              <div className="p-12 text-center text-slate-400 font-bold">
+              <div className="p-12 text-center text-slate-400 dark:text-neutral-600 font-bold">
                   No hay proformas registradas todavía.
               </div>
           )}

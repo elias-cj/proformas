@@ -47,7 +47,7 @@ const WorkOrdersView = ({ userId, userRole }) => {
     const StatusBadge = ({ status }) => {
         const colors = {
             'en_espera': 'bg-yellow-100 text-yellow-800',
-            'en_ejecucion': 'bg-blue-100 text-blue-800',
+            'en_ejecucion': 'bg-[var(--accent-soft)] text-[var(--accent)]',
             'listo': 'bg-green-100 text-green-800',
         };
         const colorClass = colors[status] || 'bg-gray-100 text-gray-800';
@@ -66,7 +66,7 @@ const WorkOrdersView = ({ userId, userRole }) => {
                 <select 
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="border-gray-300 rounded-md shadow-sm focus:border-[var(--accent)] focus:ring-[var(--accent)]"
                 >
                     <option value="all">Todos los estados</option>
                     <option value="en_espera">En Espera</option>
@@ -107,7 +107,7 @@ const WorkOrdersView = ({ userId, userRole }) => {
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         
                                         {(userRole === 'operador' || userRole === 'admin') && wo.status === 'en_espera' && !wo.technician && (
-                                            <button className="text-indigo-600 hover:text-indigo-900 mr-3">
+                                            <button className="text-[var(--accent)] hover:text-[var(--accent-hover)] mr-3">
                                                 Asignar Técnico
                                             </button>
                                         )}
@@ -115,7 +115,7 @@ const WorkOrdersView = ({ userId, userRole }) => {
                                         {wo.status === 'en_espera' && (
                                             <button 
                                                 onClick={() => handleStatusChange(wo.id, 'en_ejecucion')}
-                                                className="text-blue-600 hover:text-blue-900 mr-3">
+                                                className="text-[var(--accent)] hover:text-[var(--accent-hover)] mr-3">
                                                 Iniciar
                                             </button>
                                         )}

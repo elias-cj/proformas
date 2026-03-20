@@ -58,14 +58,14 @@ export default function OrderList() {
       {/* Header */}
       <div className="flex justify-between items-center mb-10 bg-white/50 backdrop-blur-md p-6 rounded-[2rem] shadow-xl border border-white/60">
         <div>
-          <h2 className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <h2 className="text-3xl font-black bg-gradient-to-r from-[var(--accent)] to-purple-600 bg-clip-text text-transparent">
             Órdenes de Trabajo
           </h2>
           <p className="text-slate-500 font-medium mt-1">Historial, seguimiento y asignaciones (OT)</p>
         </div>
         <button 
           onClick={() => handleOpenModal()}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold tracking-wide shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all active:scale-95 flex gap-2 items-center"
+          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white px-6 py-3 rounded-xl font-bold tracking-wide shadow-lg shadow-[var(--accent-shadow)] transition-all active:scale-95 flex gap-2 items-center"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -105,7 +105,7 @@ export default function OrderList() {
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold ${o.technician === 'Sin Asignar' ? 'text-slate-400 italic' : 'text-indigo-600'}`}>{o.technician}</span>
+                    <span className={`px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold ${o.technician === 'Sin Asignar' ? 'text-slate-400 italic' : 'text-[var(--accent)]'}`}>{o.technician}</span>
                   </td>
                   <td className="py-4 px-6 text-center">
                     <span className={`px-3 py-1 text-[10px] uppercase tracking-widest font-black rounded-full border ${
@@ -119,7 +119,7 @@ export default function OrderList() {
                     <div className="flex justify-end gap-2">
                        <button 
                          onClick={() => handleOpenModal(o)}
-                         className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors" 
+                         className="p-2 text-[var(--accent)] hover:bg-[var(--accent-soft)] rounded-lg transition-colors" 
                          title="Editar / Asignar"
                        >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -171,19 +171,19 @@ export default function OrderList() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Fecha</label>
-                    <input type="text" name="date" required value={formData.date} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                    <input type="text" name="date" required value={formData.date} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-[var(--accent)] focus:outline-none" />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Cliente / Solicitante</label>
-                  <input type="text" name="client" required value={formData.client} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                  <input type="text" name="client" required value={formData.client} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-[var(--accent)] focus:outline-none" />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                    <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Prioridad</label>
-                    <select name="priority" required value={formData.priority} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
+                    <select name="priority" required value={formData.priority} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-[var(--accent)] focus:outline-none cursor-pointer">
                       <option value="Baja">Baja</option>
                       <option value="Media">Media</option>
                       <option value="Alta">Alta</option>
@@ -192,7 +192,7 @@ export default function OrderList() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Estado</label>
-                    <select name="status" required value={formData.status} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
+                    <select name="status" required value={formData.status} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-[var(--accent)] focus:outline-none cursor-pointer">
                       <option value="Pendiente">Pendiente</option>
                       <option value="En Proceso">En Proceso</option>
                       <option value="Completada">Completada</option>
@@ -202,7 +202,7 @@ export default function OrderList() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Técnico Asignado</label>
-                  <select name="technician" required value={formData.technician} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
+                  <select name="technician" required value={formData.technician} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-[var(--accent)] focus:outline-none cursor-pointer">
                       <option value="Sin Asignar">-- Sin Asignar --</option>
                       <option value="Carlos Ruiz">Carlos Ruiz</option>
                       <option value="Ana Gómez">Ana Gómez</option>
@@ -214,7 +214,7 @@ export default function OrderList() {
                   <button type="button" onClick={handleCloseModal} className="px-6 py-3 font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
                     Cancelar
                   </button>
-                  <button type="submit" className="px-6 py-3 font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 rounded-xl transition-all active:scale-95">
+                  <button type="submit" className="px-6 py-3 font-bold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] shadow-lg shadow-[var(--accent-shadow)] rounded-xl transition-all active:scale-95">
                     Guardar Orden
                   </button>
                 </div>

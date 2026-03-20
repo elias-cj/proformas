@@ -1,22 +1,54 @@
 @import "tailwindcss";
 
+/* Forzar modo oscuro por clase en Tailwind v4 */
+@variant dark (&:where(.dark, .dark *));
+
 @layer base {
     :root {
-        --primary: #6366f1;
-        --primary-hover: #4f46e5;
-        --secondary: #a855f7;
-        --accent: #f43f5e;
-        --glass-bg: rgba(255, 255, 255, 0.7);
-        --glass-border: rgba(255, 255, 255, 0.2);
+        --bg-main: #f8fafc;
+        --text-main: #1e293b;
+        --card-bg: #ffffff;
+        --border-color: #f1f5f9;
+        --primary: #1e3a8a;
+        
+        /* Accent Colors Default (Blue) */
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --accent-soft: rgba(37, 99, 235, 0.1);
+        --accent-shadow: rgba(37, 99, 235, 0.25);
+    }
+
+    /* Accent Variant: Green */
+    [data-accent="green"] {
+        --accent: #059669;
+        --accent-hover: #047857;
+        --accent-soft: rgba(5, 150, 105, 0.1);
+        --accent-shadow: rgba(5, 150, 105, 0.25);
+    }
+
+    /* Accent Variant: Orange */
+    [data-accent="orange"] {
+        --accent: #ea580c;
+        --accent-hover: #c2410c;
+        --accent-soft: rgba(234, 88, 12, 0.1);
+        --accent-shadow: rgba(234, 88, 12, 0.25);
+    }
+
+    .dark {
+        --bg-main: #0c0c0c;
+        --text-main: #ffffff;
+        --card-bg: #1a1a1a;
+        --border-color: #262626;
+        --primary: #3b82f6;
+        
+        /* En modo oscuro, el acento puede ser un poco más vibrante */
+        --accent-shadow: rgba(255, 255, 255, 0.05);
     }
 
     body {
-        @apply bg-[#f8fafc] text-[#1e293b];
-        font-family:
-            "Inter",
-            system-ui,
-            -apple-system,
-            sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        transition: background-color 0.3s ease, color 0.3s ease;
     }
 }
 

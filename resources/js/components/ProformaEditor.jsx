@@ -66,13 +66,16 @@ const loadGoogleFonts = () => {
  */
 const ProformaEditor = ({ onBack }) => {
     const [paperSize, setPaperSize] = useState("A4");
-    const [margins, setMargins] = useState({ top: 5.0, bottom: 3.0, left: 2.0, right: 2.0 });
+    const [margins, setMargins] = useState({ top: 5.0, bottom: 2.0, left: 2.0, right: 2.0 });
     const [globalFont, setGlobalFont] = useState("Inter");
     const [templates, setTemplates] = useState([]);
     const [selectedTemplate, setSelectedTemplate] = useState("");
     const [backgroundUrl, setBackgroundUrl] = useState(localStorage.getItem("proforma_background") || "");
     const [previewFile, setPreviewFile] = useState(null);
     const [discount, setDiscount] = useState(0);
+    const [showTerms, setShowTerms] = useState(true);
+    const [termsMode, setTermsMode] = useState('compact'); // 'detailed', 'compact', 'ultra'
+    const [termsPosition, setTermsPosition] = useState('flow'); // 'fixed', 'flow'
     const [customerName, setCustomerName] = useState("");
     const [customerDoc, setCustomerDoc] = useState("");
     const [advisorName, setAdvisorName] = useState("");
@@ -410,21 +413,21 @@ const ProformaEditor = ({ onBack }) => {
                             ))}
                         </select>
                         <div className="w-px h-6 bg-gray-200 mx-1" />
-                        <button onClick={() => updateItemStyle(row.id, 'bold', !row.style?.bold)} className={`p-2.5 rounded-xl transition-all ${row.style?.bold ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`} title="Negrita"><b className="text-[14px]">B</b></button>
-                        <button onClick={() => updateItemStyle(row.id, 'italic', !row.style?.italic)} className={`p-2.5 rounded-xl transition-all ${row.style?.italic ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`} title="Cursiva"><i className="text-[14px]">I</i></button>
-                        <button onClick={() => updateItemStyle(row.id, 'underline', !row.style?.underline)} className={`p-2.5 rounded-xl transition-all ${row.style?.underline ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`} title="Subrayado"><u className="text-[14px]">U</u></button>
-                        <button onClick={() => updateItemStyle(row.id, 'strike', !row.style?.strike)} className={`p-2.5 rounded-xl transition-all ${row.style?.strike ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`} title="Tachado"><s className="text-[14px]">S</s></button>
+                        <button onClick={() => updateItemStyle(row.id, 'bold', !row.style?.bold)} className={`p-2.5 rounded-xl transition-all ${row.style?.bold ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Negrita"><b className="text-[14px]">B</b></button>
+                        <button onClick={() => updateItemStyle(row.id, 'italic', !row.style?.italic)} className={`p-2.5 rounded-xl transition-all ${row.style?.italic ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Cursiva"><i className="text-[14px]">I</i></button>
+                        <button onClick={() => updateItemStyle(row.id, 'underline', !row.style?.underline)} className={`p-2.5 rounded-xl transition-all ${row.style?.underline ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Subrayado"><u className="text-[14px]">U</u></button>
+                        <button onClick={() => updateItemStyle(row.id, 'strike', !row.style?.strike)} className={`p-2.5 rounded-xl transition-all ${row.style?.strike ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Tachado"><s className="text-[14px]">S</s></button>
                         <div className="w-px h-6 bg-gray-200 mx-1" />
-                        <button onClick={() => updateItemStyle(row.id, 'align', 'left')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'left' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`} title="Alinear a la izquierda">
+                        <button onClick={() => updateItemStyle(row.id, 'align', 'left')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'left' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Alinear a la izquierda">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h10M4 18h16" /></svg>
                         </button>
-                        <button onClick={() => updateItemStyle(row.id, 'align', 'center')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'center' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`} title="Centrar">
+                        <button onClick={() => updateItemStyle(row.id, 'align', 'center')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'center' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Centrar">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M7 12h10M4 18h16" /></svg>
                         </button>
-                        <button onClick={() => updateItemStyle(row.id, 'align', 'right')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'right' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`} title="Alinear a la derecha">
+                        <button onClick={() => updateItemStyle(row.id, 'align', 'right')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'right' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Alinear a la derecha">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M10 12h10M4 18h16" /></svg>
                         </button>
-                        <button onClick={() => updateItemStyle(row.id, 'align', 'justify')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'justify' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-500'}`} title="Justificar">
+                        <button onClick={() => updateItemStyle(row.id, 'align', 'justify')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'justify' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Justificar">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                         </button>
                         <div className="w-px h-6 bg-gray-200 mx-1" />
@@ -448,7 +451,7 @@ const ProformaEditor = ({ onBack }) => {
     };
 
     return (
-        <div className="flex flex-col xl:flex-row w-full min-h-screen bg-[#f1f5f9] font-sans selection:bg-indigo-100 p-4 xl:p-6 gap-6 justify-center">
+        <div className="flex flex-col xl:flex-row w-full min-h-screen bg-[#f1f5f9] font-sans selection:bg-[var(--accent-soft)] p-4 xl:p-6 gap-6 justify-center">
             {/* Canva Style Toolbar */}
             <FloatingToolbar />
 
@@ -457,7 +460,7 @@ const ProformaEditor = ({ onBack }) => {
                 {onBack && (
                     <button 
                         onClick={onBack}
-                        className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold transition-colors w-fit bg-white/50 backdrop-blur-md px-4 py-2 rounded-xl border border-white/60 shadow-sm"
+                        className="flex items-center gap-2 text-slate-500 hover:text-blue-900 font-bold transition-colors w-fit bg-white/50 backdrop-blur-md px-4 py-2 rounded-xl border border-white/60 shadow-sm"
                     >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -467,8 +470,8 @@ const ProformaEditor = ({ onBack }) => {
                 )}
 
                 <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2rem] p-8 sticky top-8 animate-in fade-in slide-in-from-left-4 duration-700">
-                    <h2 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-6">
-                        Diseño Premium
+                    <h2 className="text-2xl font-black text-[var(--accent)] mb-6">
+                        Editor de Proforma
                     </h2>
 
                     <div className="space-y-5">
@@ -481,7 +484,7 @@ const ProformaEditor = ({ onBack }) => {
                                         onClick={() => setPaperSize(size === "Carta" ? "Letter" : "A4")}
                                         className={`py-2 text-sm font-bold rounded-lg transition-all ${
                                             (paperSize === "A4" && size === "A4") || (paperSize === "Letter" && size === "Carta")
-                                                ? "bg-white text-indigo-600 shadow-sm scale-[1.02]"
+                                                ? "bg-white text-[var(--accent)] shadow-sm scale-[1.02]"
                                                 : "text-gray-500 hover:text-gray-700"
                                         }`}
                                     >
@@ -496,7 +499,7 @@ const ProformaEditor = ({ onBack }) => {
                             <select
                                 value={selectedTemplate}
                                 onChange={(e) => handleTemplateChange(e.target.value)}
-                                className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
+                                className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[var(--accent)] transition-all cursor-pointer"
                             >
                                 <option value="">Original (Limpio)</option>
                                 {templates.map((t) => (
@@ -504,8 +507,8 @@ const ProformaEditor = ({ onBack }) => {
                                 ))}
                             </select>
                             <div className="mt-3 space-y-3">
-                                <label className="flex items-center justify-center gap-2 w-full py-4 border-2 border-dashed border-indigo-200 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all active:scale-[0.98] bg-white group">
-                                    <span className={`text-[10px] font-black tracking-widest uppercase text-center px-4 overflow-hidden text-ellipsis whitespace-nowrap transition-colors ${previewFile ? 'text-emerald-600' : 'text-indigo-600'}`}>
+                                <label className="flex items-center justify-center gap-2 w-full py-4 border-2 border-dashed border-[var(--accent-soft)] rounded-xl cursor-pointer hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] transition-all active:scale-[0.98] bg-white group">
+                                    <span className={`text-[10px] font-black tracking-widest uppercase text-center px-4 overflow-hidden text-ellipsis whitespace-nowrap transition-colors ${previewFile ? 'text-emerald-600' : 'text-[var(--accent)]'}`}>
                                         {previewFile ? `✅ SELECCIONADO: ${previewFile.name}` : "👉 CLIC AQUÍ PARA SELECCIONAR"}
                                     </span>
                                     <input 
@@ -575,7 +578,7 @@ const ProformaEditor = ({ onBack }) => {
                             className="relative z-10 w-full h-full flex flex-col antialiased"
                             style={{ 
                                 paddingTop: `${margins.top}cm`, 
-                                paddingBottom: `${margins.bottom + 3.0}cm`, // +3.0cm para despeje total del pie
+                                paddingBottom: `${margins.bottom + (termsPosition === 'fixed' ? 3.0 : 0)}cm`, 
                                 paddingLeft: `${margins.left}cm`, 
                                 paddingRight: `${margins.right}cm` 
                             }}
@@ -605,7 +608,7 @@ const ProformaEditor = ({ onBack }) => {
                                             </div>
                                         </div>
                                         
-                                        <table className="border-collapse border border-slate-800 text-[10px] w-48 font-bold">
+                                        <table className="border-collapse border border-slate-800 text-[10px] w-48 font-bold" style={{ marginTop: '-1.6cm' }}>
                                             <tbody>
                                                 <tr>
                                                     <td className="border border-slate-800 px-2 py-1 bg-slate-50">FECHA</td>
@@ -627,23 +630,39 @@ const ProformaEditor = ({ onBack }) => {
                                         </table>
                                     </div>
 
-                                    <div className="mb-8">
-                                        <div className="bg-[#005599] text-white text-[11px] font-black px-3 py-1 uppercase tracking-widest mb-2">
-                                            Cliente
+                                    <div className="grid grid-cols-2 gap-4 mb-8">
+                                        <div className="border border-slate-800">
+                                            <div className="bg-[var(--accent)] text-white text-[10px] font-black px-3 py-1 uppercase tracking-widest border-b border-slate-800">
+                                                Cliente
+                                            </div>
+                                            <div className="p-2 text-[11px] font-bold text-slate-800 space-y-1 bg-white">
+                                                <input 
+                                                    className="w-full bg-transparent border-none p-0 focus:ring-0 placeholder:text-slate-300 uppercase leading-tight" 
+                                                    placeholder="Nombre del Cliente / Razón Social"
+                                                    value={customerName}
+                                                    onChange={e => setCustomerName(e.target.value)}
+                                                />
+                                                <input 
+                                                    className="w-full bg-transparent border-none p-0 text-[10px] text-slate-500 focus:ring-0 placeholder:text-slate-300 uppercase leading-tight" 
+                                                    placeholder="Ciudad / NIT"
+                                                    value={customerDoc}
+                                                    onChange={e => setCustomerDoc(e.target.value)}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="px-1 text-[12px] font-bold text-slate-800 space-y-0.5">
-                                            <input 
-                                                className="w-full bg-transparent border-none p-0 focus:ring-0 placeholder:text-slate-300 uppercase" 
-                                                placeholder="Nombre del Cliente / Razón Social"
-                                                value={customerName}
-                                                onChange={e => setCustomerName(e.target.value)}
-                                            />
-                                            <input 
-                                                className="w-full bg-transparent border-none p-0 text-[10px] text-slate-500 focus:ring-0 placeholder:text-slate-300 uppercase" 
-                                                placeholder="Ciudad / NIT"
-                                                value={customerDoc}
-                                                onChange={e => setCustomerDoc(e.target.value)}
-                                            />
+
+                                        <div className="border border-slate-800">
+                                            <div className="bg-[var(--accent)] text-white text-[10px] font-black px-3 py-1 uppercase tracking-widest border-b border-slate-800">
+                                                Términos y Condiciones
+                                            </div>
+                                            <div className="p-2 bg-white">
+                                                <ul className="text-[9px] font-bold text-slate-600 space-y-0.5 leading-tight">
+                                                    <li>• Precios en Bolivianos e incluye Impuestos (Factura).</li>
+                                                    <li>• Incluye entrega e instalación en sitio.</li>
+                                                    <li>• Garantía real de 1 año por defecto de fábrica.</li>
+                                                    <li>• Forma de pago: 50% inicio / 50% contra entrega.</li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </>
@@ -656,7 +675,7 @@ const ProformaEditor = ({ onBack }) => {
                             <div className="flex-1">
                                 {pageRows.length > 0 && (
                                     <table className="w-full border-collapse border border-slate-800" style={{ tableLayout: 'fixed' }}>
-                                        <thead className="bg-[#005599] text-white text-[10px] font-black uppercase tracking-wider">
+                                        <thead className="bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-wider">
                                             <tr>
                                                 <th className="border border-slate-800 p-0 relative" style={{ width: colWidths.item }}>
                                                     <div className="py-1 text-center">ITEM</div>
@@ -832,7 +851,7 @@ const ProformaEditor = ({ onBack }) => {
                                                     <td colSpan="4" className="border-none py-4 px-6 italic text-[10px] font-bold text-slate-500">
                                                         {numeroALetras(total)}
                                                     </td>
-                                                    <td className="border border-slate-800 bg-[#005599] text-white text-[10px] font-black text-right pr-3 py-2 uppercase">TOTAL BS.</td>
+                                                    <td className="border border-slate-800 bg-[var(--accent)] text-white text-[10px] font-black text-right pr-3 py-2 uppercase">TOTAL BS.</td>
                                                     <td className="border border-slate-800 text-[14px] font-black pr-3 py-2 text-right bg-slate-100">{formatCurrency(total)}</td>
                                                 </tr>
                                             </tfoot>
@@ -841,34 +860,11 @@ const ProformaEditor = ({ onBack }) => {
                                 )}
                             </div>
 
-                            {/* TÉRMINOS Y CONTACTO: Solo en la ÚLTIMA HOJA - Posición FIJA (Absolute) */}
+                            {/* FOOTER: Solo en la ÚLTIMA HOJA */}
                             {pageIdx === pages.length - 1 && (
-                                <div style={{ 
-                                    position: 'absolute', 
-                                    bottom: '2.7cm', 
-                                    left: `${margins.left}cm`, 
-                                    right: `${margins.right}cm`,
-                                    zIndex: 10
-                                }}>
-                                    <div>
-                                        <div className="bg-[#005599] text-white text-[10px] font-black px-3 py-1 uppercase tracking-widest mb-0 border border-slate-800">
-                                            Términos y Condiciones
-                                        </div>
-                                        <div className="border border-slate-800 p-3 text-[10px] font-bold text-slate-600 leading-relaxed bg-white shadow-sm">
-                                            <ol className="list-decimal list-inside space-y-1">
-                                                <li>Todos los precios están expresados en Bolivianos.</li>
-                                                <li>Incluye entrega e instalación en sitio.</li>
-                                                <li>Incluye impuestos de Ley (Factura).</li>
-                                                <li>Garantía real de 1 año por defectos de fábrica.</li>
-                                                <li>Forma de pago: A convenir 50% inicio / 50% entrega.</li>
-                                            </ol>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-8 text-center text-[11px] italic font-medium text-slate-400 pb-4">
-                                        Si usted tiene alguna pregunta sobre esta cotización, por favor, póngase en contacto con nosotros.
-                                        <p className="mt-2 text-slate-600 font-black text-[12px] not-italic tracking-tight">¡Gracias por hacer negocios con nosotros!</p>
-                                    </div>
+                                <div className="mt-8 text-center text-[10px] italic font-medium text-slate-400 pb-4 no-break-inside">
+                                    Si usted tiene alguna pregunta sobre esta cotización, por favor, póngase en contacto con nosotros.
+                                    <p className="mt-1 text-slate-600 font-black text-[11px] not-italic tracking-tight uppercase">¡Gracias por hacer negocios con nosotros!</p>
                                 </div>
                             )}
                         </div>
@@ -879,7 +875,7 @@ const ProformaEditor = ({ onBack }) => {
             {/* Right Sidebar (Márgenes y Métricas) */}
             <aside className="w-full xl:w-72 flex flex-col gap-6 no-print">
                 <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2rem] p-6 sticky top-8 animate-in fade-in slide-in-from-right-4 duration-700">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-6">Márgenes de Hoja</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--accent)] mb-6">Márgenes de Hoja</label>
                     
                     <div className="space-y-6">
                         <section className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
@@ -896,7 +892,7 @@ const ProformaEditor = ({ onBack }) => {
                                             type="number" step="0.1" min="0" max="15" 
                                             value={margins[m.key] === 0 ? "" : margins[m.key]} 
                                             onChange={e => setMargins({...margins, [m.key]: e.target.value === "" ? 0 : parseFloat(e.target.value)})} 
-                                            className="w-full bg-white border-none rounded-lg py-2 px-1 text-xs font-black shadow-sm focus:ring-1 focus:ring-indigo-500 text-indigo-600"
+                                            className="w-full bg-white border-none rounded-lg py-2 px-1 text-xs font-black shadow-sm focus:ring-1 focus:ring-[var(--accent)] text-[var(--accent)]"
                                         />
                                     </div>
                                 ))}
@@ -904,8 +900,20 @@ const ProformaEditor = ({ onBack }) => {
                             <p className="mt-3 text-[9px] text-slate-400 italic text-center">Valores en Centímetros (cm)</p>
                         </section>
 
-                        <section className="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100/50">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-4">Métricas Financieras</h3>
+                        <section className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mostrar Términos</h3>
+                                <button 
+                                    onClick={() => setShowTerms(!showTerms)}
+                                    className={`w-8 h-4 rounded-full relative transition-all ${showTerms ? 'bg-[var(--accent)]' : 'bg-slate-200'}`}
+                                >
+                                    <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${showTerms ? 'translate-x-4' : ''}`} />
+                                </button>
+                            </div>
+                        </section>
+
+                        <section className="bg-[var(--accent-soft)] rounded-2xl p-5 border border-[var(--accent-soft)]">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] mb-4">Métricas Financieras</h3>
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs font-bold text-slate-500">
                                     <span>Subtotal</span>
@@ -915,14 +923,14 @@ const ProformaEditor = ({ onBack }) => {
                                     <span>Descuento %</span>
                                     <input 
                                         type="number" 
-                                        className="w-16 bg-white border-none rounded-lg py-1 px-2 text-right focus:ring-1 focus:ring-indigo-500"
+                                        className="w-16 bg-white border-none rounded-lg py-1 px-2 text-right focus:ring-1 focus:ring-[var(--accent)]"
                                         value={discount}
                                         onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
                                     />
                                 </div>
-                                <div className="pt-3 border-t border-indigo-200 flex justify-between items-center">
-                                    <span className="text-sm font-black text-indigo-900 uppercase">Total</span>
-                                    <span className="text-xl font-black text-indigo-600">${total.toFixed(2)}</span>
+                                <div className="pt-3 border-t border-[var(--accent-soft)] flex justify-between items-center">
+                                    <span className="text-sm font-black text-[var(--accent)] uppercase">Total</span>
+                                    <span className="text-xl font-black text-[var(--accent)]">${total.toFixed(2)}</span>
                                 </div>
                             </div>
                         </section>
@@ -930,14 +938,14 @@ const ProformaEditor = ({ onBack }) => {
                         <div className="flex flex-col gap-3">
                             <button 
                                 onClick={addRow}
-                                className="w-full bg-white border-2 border-dashed border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 font-black py-3 rounded-xl transition-all active:scale-95 text-[10px] tracking-widest flex items-center justify-center gap-2 mb-2"
+                                className="w-full bg-white border-2 border-dashed border-[var(--accent-soft)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] text-[var(--accent)] font-black py-3 rounded-xl transition-all active:scale-95 text-[10px] tracking-widest flex items-center justify-center gap-2 mb-2"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                 </svg>
                                 AGREGAR ÍTEM
                             </button>
-                            <button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black py-4 rounded-xl shadow-xl shadow-indigo-500/20 active:scale-95 transition-all text-xs">
+                            <button className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-black py-4 rounded-xl shadow-xl shadow-[var(--accent-shadow)] active:scale-95 transition-all text-xs">
                                 REGISTRAR PROFORMA
                             </button>
                             <button 
