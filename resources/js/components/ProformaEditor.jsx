@@ -707,11 +707,11 @@ const ProformaEditor = ({ onBack }) => {
                                             {pageRows.map((row, rowIdx) => {
                                                 const globalIdx = details.findIndex(r => r.id === row.id);
                                                 // La altura real es el máximo entre lo manual y lo auto-calculado
-                                                const rowHeight = Math.max(32, manualRowHeights[row.id] || 0, autoRowHeights[row.id] || 0);
+                                                const rowHeight = Math.max(13, manualRowHeights[row.id] || 0, autoRowHeights[row.id] || 0);
                                                 return (
                                                     <tr key={row.id} className="text-slate-800" style={{ height: rowHeight }}>
                                                         <td className="border border-slate-800 text-center text-[11px] font-bold" style={{ height: rowHeight }}>{globalIdx + 1}</td>
-                                                        <td className="border border-slate-800 py-0.5 px-3 relative" style={{ height: rowHeight }}>
+                                                        <td className="border border-slate-800 py-0 px-3 relative" style={{ height: rowHeight }}>
                                                             <textarea 
                                                                 rows="1"
                                                                 className="w-full bg-transparent border-none focus:ring-0 p-0 resize-none overflow-hidden placeholder:text-slate-300 placeholder:italic"
@@ -725,7 +725,7 @@ const ProformaEditor = ({ onBack }) => {
                                                                     fontFamily: row.style?.font ? `'${row.style.font}', sans-serif` : `${globalFont}, sans-serif`,
                                                                     color: row.style?.color || '#1e293b',
                                                                     lineHeight: row.style?.lineHeight || '1.2',
-                                                                    height: rowHeight - 8
+                                                                    height: rowHeight
                                                                 }}
                                                                 value={row.description}
                                                                 onFocus={() => {
@@ -738,7 +738,7 @@ const ProformaEditor = ({ onBack }) => {
                                                                     // Truco para que scrollHeight se recalcule hacia abajo:
                                                                     const originalStyleHeight = e.target.style.height;
                                                                     e.target.style.height = 'auto'; 
-                                                                    const contentHeight = Math.max(32, e.target.scrollHeight + 8);
+                                                                    const contentHeight = Math.max(13, e.target.scrollHeight);
                                                                     e.target.style.height = originalStyleHeight;
 
                                                                     setAutoRowHeights(prev => ({ ...prev, [row.id]: contentHeight }));
@@ -749,7 +749,7 @@ const ProformaEditor = ({ onBack }) => {
                                                         <td className="border border-slate-800 p-0 relative" style={{ height: rowHeight }}>
                                                             <textarea 
                                                                 rows="1"
-                                                                className="w-full bg-transparent border-none focus:ring-0 p-1 resize-none overflow-hidden uppercase placeholder:text-slate-300 italic" 
+                                                                className="w-full bg-transparent border-none focus:ring-0 p-0 resize-none overflow-hidden uppercase placeholder:text-slate-300 italic" 
                                                                 placeholder="MARCA"
                                                                 style={{
                                                                     fontWeight: row.style?.bold ? '900' : 'bold',
@@ -760,7 +760,7 @@ const ProformaEditor = ({ onBack }) => {
                                                                     fontFamily: row.style?.font ? `'${row.style.font}', sans-serif` : `${globalFont}, sans-serif`,
                                                                     color: row.style?.color || '#1e293b',
                                                                     lineHeight: '1.1',
-                                                                    height: rowHeight - 8
+                                                                    height: rowHeight
                                                                 }}
                                                                 value={row.marca || ""}
                                                                 onFocus={() => {
@@ -772,7 +772,7 @@ const ProformaEditor = ({ onBack }) => {
                                                                     
                                                                     const originalStyleHeight = e.target.style.height;
                                                                     e.target.style.height = 'auto';
-                                                                    const contentHeight = Math.max(32, e.target.scrollHeight + 8);
+                                                                    const contentHeight = Math.max(13, e.target.scrollHeight);
                                                                     e.target.style.height = originalStyleHeight;
 
                                                                     setAutoRowHeights(prev => ({ ...prev, [row.id]: contentHeight }));
@@ -819,7 +819,7 @@ const ProformaEditor = ({ onBack }) => {
                                                                 onChange={e => handleDetailChange(row.id, "unit_price", e.target.value)}
                                                             />
                                                         </td>
-                                                        <td className="border border-slate-800 py-1 pr-3 text-right font-black text-slate-900 bg-slate-50/50 relative"
+                                                        <td className="border border-slate-800 py-0 pr-3 text-right font-black text-slate-900 bg-slate-50/50 relative"
                                                             style={{
                                                                 fontSize: row.style?.fontSize || '12px',
                                                                 fontFamily: row.style?.font ? `'${row.style.font}', sans-serif` : `${globalFont}, sans-serif`,
