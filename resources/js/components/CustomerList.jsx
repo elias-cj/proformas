@@ -1,18 +1,37 @@
-import React, { useState } from 'react';
-
-const mockCustomers = [
-  { id: 1, name: 'Empresa Alpha S.A.', doc: 'NIT: 102938475', phone: '+591 70012345', email: 'contacto@alpha.com', type: 'Corporativo' },
-  { id: 2, name: 'Juan Pérez', doc: 'CI: 8392019', phone: '+591 60098765', email: 'juan.perez@gmail.com', type: 'Individual' },
-  { id: 3, name: 'Industrial Beta SRL', doc: 'NIT: 987654321', phone: '+591 71122334', email: 'gerencia@betasrl.com', type: 'Corporativo' },
-];
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export default function CustomerList() {
-  const [customers, setCustomers] = useState(mockCustomers);
+  const [customers, setCustomers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Form State
-  const [formData, setFormData] = useState({ name: '', doc: '', phone: '', email: '', type: 'Corporativo' });
+  const [formData, setFormData] = useState({ 
+    name_reason_social: '', 
+    document_number: '', 
+    phone: '', 
+    email: '', 
+    document_type: 'Corporativo',
+    address: '',
+    is_active: true
+  });
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await axios.get('/api/customers');
+      setCustomers(response.data);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -20,7 +39,15 @@ export default function CustomerList() {
       setFormData(item);
     } else {
       setEditingItem(null);
-      setFormData({ name: '', doc: '', phone: '', email: '', type: 'Corporativo' });
+      setFormData({ 
+        name_reason_social: '', 
+        document_number: '', 
+        phone: '', 
+        email: '', 
+        document_type: 'Corporativo',
+        address: '',
+        is_active: true
+      });
     }
     setIsModalOpen(true);
   };
@@ -31,22 +58,36 @@ export default function CustomerList() {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (editingItem) {
-      setCustomers(customers.map(c => c.id === editingItem.id ? { ...formData, id: c.id } : c));
-    } else {
-      setCustomers([...customers, { ...formData, id: Date.now() }]);
+    try {
+      if (editingItem) {
+        const response = await axios.put(`/api/customers/${editingItem.id}`, formData);
+        setCustomers(customers.map(c => c.id === editingItem.id ? response.data : c));
+      } else {
+        const response = await axios.post('/api/customers', formData);
+        setCustomers([...customers, response.data]);
+      }
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error saving customer:", error);
+      alert("Error al guardar el cliente. Verifique que el número de documento no esté duplicado.");
     }
-    handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este cliente?")) {
-      setCustomers(customers.filter(c => c.id !== id));
+      try {
+        await axios.delete(`/api/customers/${id}`);
+        setCustomers(customers.filter(c => c.id !== id));
+      } catch (error) {
+        console.error("Error deleting customer:", error);
+        alert("Error al eliminar el cliente");
+      }
     }
   };
 
@@ -88,8 +129,8 @@ export default function CustomerList() {
               {customers.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-neutral-800/30 transition-colors group">
                   <td className="py-4 px-6">
-                    <p className="font-bold text-slate-800 dark:text-white">{c.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-neutral-500 font-medium">{c.doc}</p>
+                    <p className="font-bold text-slate-800 dark:text-white">{c.name_reason_social}</p>
+                    <p className="text-xs text-slate-500 dark:text-neutral-500 font-medium">{c.document_number}</p>
                   </td>
                   <td className="py-4 px-6">
                     <p className="font-semibold text-slate-700 dark:text-neutral-300">{c.phone}</p>
@@ -97,9 +138,9 @@ export default function CustomerList() {
                   </td>
                   <td className="py-4 px-6 text-center">
                     <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                      c.type === 'Corporativo' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
+                      c.document_type === 'Corporativo' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
                     }`}>
-                      {c.type}
+                      {c.document_type}
                     </span>
                   </td>
                   <td className="py-4 px-6">
@@ -153,17 +194,17 @@ export default function CustomerList() {
               <form onSubmit={handleSave} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-neutral-500 uppercase tracking-widest mb-1">Nombre / Razón Social</label>
-                  <input type="text" name="name" required value={formData.name} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none transition-all" />
+                  <input type="text" name="name_reason_social" required value={formData.name_reason_social} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none transition-all" />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-neutral-500 uppercase tracking-widest mb-1">Documento (NIT/CI)</label>
-                    <input type="text" name="doc" required value={formData.doc} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none transition-all" />
+                    <input type="text" name="document_number" required value={formData.document_number} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none transition-all" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-neutral-500 uppercase tracking-widest mb-1">Tipo</label>
-                    <select name="type" required value={formData.type} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none cursor-pointer">
+                    <select name="document_type" required value={formData.document_type} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none cursor-pointer">
                       <option value="Corporativo">Corporativo</option>
                       <option value="Individual">Individual</option>
                     </select>

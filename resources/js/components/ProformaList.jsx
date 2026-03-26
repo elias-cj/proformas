@@ -17,9 +17,9 @@ export default function ProformaList({ onNavigateToEditor }) {
       <div className="flex justify-between items-center mb-10">
         <div>
           <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-            Historial de Incidencias
+            Historial de Proformas
           </h2>
-          <p className="text-slate-500 dark:text-neutral-400 font-medium mt-1">Registro detallado y búsqueda de eventos reportados.</p>
+          <p className="text-slate-500 dark:text-neutral-400 font-medium mt-1">Gestión y seguimiento de cotizaciones de EMPROTEC.</p>
         </div>
         <button 
           onClick={onNavigateToEditor}

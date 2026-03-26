@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
 
         $admin = \App\Models\User::firstOrCreate(['email' => 'admin@admin.com'], [
             'name' => 'Admin User',
-            'password' => bcrypt('password')
+            'password' => bcrypt('admin')
         ]);
 
         $adminRole = \App\Models\Role::where('name', 'Administrador')->first();

@@ -1,10 +1,5 @@
-import React, { useState } from 'react';
-
-const mockCategories = [
-  { id: 1, name: 'CCTV y Seguridad', description: 'Cámaras, DVRs, NVRs y accesorios.', color: 'indigo', status: 'Activo' },
-  { id: 2, name: 'Redes y Conectividad', description: 'Routers, Switches, Cableado estructurado.', color: 'sky', status: 'Activo' },
-  { id: 3, name: 'Soporte Técnico', description: 'Servicios de reparación y mantenimiento.', color: 'emerald', status: 'Activo' },
-];
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const colorOptions = [
     { label: 'Azul (Cielo)', value: 'sky' },
@@ -16,12 +11,30 @@ const colorOptions = [
 ];
 
 export default function CategoryList() {
-  const [categories, setCategories] = useState(mockCategories);
+  const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [categoryType, setCategoryType] = useState('product'); // 'product' or 'service'
 
   // Form State
   const [formData, setFormData] = useState({ name: '', description: '', color: 'indigo', status: 'Activo' });
+
+  useEffect(() => {
+    fetchCategories();
+  }, [categoryType]);
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`/api/categories?type=${categoryType}`);
+      setCategories(response.data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -43,19 +56,33 @@ export default function CategoryList() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (editingItem) {
-      setCategories(categories.map(c => c.id === editingItem.id ? { ...formData, id: c.id } : c));
-    } else {
-      setCategories([...categories, { ...formData, id: Date.now() }]);
+    try {
+      const dataToSave = { ...formData, type: categoryType };
+      if (editingItem) {
+        const response = await axios.put(`/api/categories/${editingItem.id}`, dataToSave);
+        setCategories(categories.map(c => c.id === editingItem.id ? response.data : c));
+      } else {
+        const response = await axios.post('/api/categories', dataToSave);
+        setCategories([...categories, response.data]);
+      }
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error saving category:", error);
+      alert("Error al guardar la categoría");
     }
-    handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("¿Seguro que deseas eliminar esta categoría? Se desvinculará de los productos asociados.")) {
-      setCategories(categories.filter(c => c.id !== id));
+      try {
+        await axios.delete(`/api/categories/${id}`);
+        setCategories(categories.filter(c => c.id !== id));
+      } catch (error) {
+        console.error("Error deleting category:", error);
+        alert("Error al eliminar la categoría");
+      }
     }
   };
 
@@ -64,11 +91,25 @@ export default function CategoryList() {
       
       {/* Header */}
       <div className="flex justify-between items-center mb-10 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-md p-6 rounded-[2rem] shadow-xl border border-white/60 dark:border-neutral-800 transition-colors duration-300">
-        <div>
+        <div className="flex flex-col gap-4 items-center md:items-start">
           <h2 className="text-3xl font-black bg-gradient-to-r from-[var(--accent)] to-purple-600 bg-clip-text text-transparent">
             Categorías
           </h2>
-          <p className="text-slate-500 dark:text-neutral-400 font-medium mt-1">Gestión de familias para productos y servicios</p>
+          {/* Toggle Switch */}
+          <div className="flex bg-slate-100 dark:bg-neutral-800 p-1 rounded-xl w-fit shadow-inner border border-slate-200 dark:border-neutral-700">
+            <button 
+              onClick={() => setCategoryType('product')}
+              className={`px-6 py-2 rounded-lg text-xs font-black transition-all duration-300 ${categoryType === 'product' ? 'bg-white dark:bg-neutral-700 text-[var(--accent)] shadow-md' : 'text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300'}`}
+            >
+              PRODUCTOS
+            </button>
+            <button 
+              onClick={() => setCategoryType('service')}
+              className={`px-6 py-2 rounded-lg text-xs font-black transition-all duration-300 ${categoryType === 'service' ? 'bg-white dark:bg-neutral-700 text-[var(--accent)] shadow-md' : 'text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300'}`}
+            >
+              SERVICIOS
+            </button>
+          </div>
         </div>
         <button 
           onClick={() => handleOpenModal()}

@@ -21,12 +21,14 @@ class ServiceController extends Controller
             'description' => 'nullable|string',
             'base_price' => 'numeric|min:0',
             'is_active' => 'boolean',
+            'category_id' => 'nullable|exists:categories,id',
+            'duration' => 'nullable|string',
             'products' => 'nullable|array',
             'products.*.id' => 'required|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1'
         ]);
 
-        $service = Service::create($validated);
+        $service = Service::create(\Illuminate\Support\Arr::except($validated, ['products']));
 
         if (isset($validated['products'])) {
             $syncData = [];
@@ -51,12 +53,14 @@ class ServiceController extends Controller
             'description' => 'nullable|string',
             'base_price' => 'numeric|min:0',
             'is_active' => 'boolean',
+            'category_id' => 'nullable|exists:categories,id',
+            'duration' => 'nullable|string',
             'products' => 'nullable|array',
             'products.*.id' => 'required|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1'
         ]);
 
-        $service->update($validated);
+        $service->update(\Illuminate\Support\Arr::except($validated, ['products']));
 
         if ($request->has('products')) {
             $syncData = [];

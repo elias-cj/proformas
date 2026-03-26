@@ -1,26 +1,46 @@
-import React, { useState } from 'react';
-
-const mockProducts = [
-  { id: 1, code: 'PRD-001', name: 'Cámara IP Domo 2MP', brand: 'Hikvision', price: '$45.00', stock: 120 },
-  { id: 2, code: 'PRD-002', name: 'DVR 8 Canales 1080p', brand: 'Dahua', price: '$85.00', stock: 15 },
-  { id: 3, code: 'PRD-003', name: 'Cable UTP Cat6 (Caja 305m)', brand: 'CommScope', price: '$110.00', stock: 4 },
-];
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export default function ProductList() {
-  const [products, setProducts] = useState(mockProducts);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Form State
-  const [formData, setFormData] = useState({ code: '', name: '', brand: '', price: '', stock: '' });
+  const [formData, setFormData] = useState({ code: '', name: '', brand: '', price: '', stock: '', category_id: '' });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [productsRes, categoriesRes] = await Promise.all([
+        axios.get('/api/products'),
+        axios.get('/api/categories?type=product')
+      ]);
+      setProducts(productsRes.data);
+      setCategories(categoriesRes.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenModal = (item = null) => {
     if (item) {
       setEditingItem(item);
-      setFormData(item);
+      setFormData({
+        ...item,
+        price: item.price.toString().replace('$', ''),
+        category_id: item.category_id || ''
+      });
     } else {
       setEditingItem(null);
-      setFormData({ code: '', name: '', brand: '', price: '', stock: '' });
+      setFormData({ code: '', name: '', brand: '', price: '', stock: '', category_id: '' });
     }
     setIsModalOpen(true);
   };
@@ -34,19 +54,37 @@ export default function ProductList() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (editingItem) {
-      setProducts(products.map(p => p.id === editingItem.id ? { ...formData, id: p.id } : p));
-    } else {
-      setProducts([...products, { ...formData, id: Date.now() }]);
+    const dataToSave = {
+      ...formData,
+      price: parseFloat(formData.price.toString().replace('$', '')) || 0
+    };
+
+    try {
+      if (editingItem) {
+        const response = await axios.put(`/api/products/${editingItem.id}`, dataToSave);
+        setProducts(products.map(p => p.id === editingItem.id ? response.data : p));
+      } else {
+        const response = await axios.post('/api/products', dataToSave);
+        setProducts([...products, response.data]);
+      }
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error saving product:", error);
+      alert("Error al guardar el producto");
     }
-    handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este producto?")) {
-      setProducts(products.filter(p => p.id !== id));
+      try {
+        await axios.delete(`/api/products/${id}`);
+        setProducts(products.filter(p => p.id !== id));
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        alert("Error al eliminar el producto");
+      }
     }
   };
 
@@ -81,6 +119,7 @@ export default function ProductList() {
                 <th className="py-5 px-6">Código / Nombre</th>
                 <th className="py-5 px-6 text-center">Marca</th>
                 <th className="py-5 px-6 text-center">Stock</th>
+                <th className="py-5 px-6 text-center">Categoría</th>
                 <th className="py-5 px-6 text-right">Precio Unit.</th>
                 <th className="py-5 px-6 text-right">Acciones</th>
               </tr>
@@ -101,7 +140,14 @@ export default function ProductList() {
                     </span>
                     <span className="text-xs text-slate-400 dark:text-neutral-500 ml-1">und</span>
                   </td>
-                  <td className="py-4 px-6 text-right font-black text-slate-800 dark:text-white">{p.price}</td>
+                  <td className="py-4 px-6 text-center">
+                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold uppercase tracking-wider">
+                      {categories.find(cat => cat.id === p.category_id)?.name || 'Sin Categoría'}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-right font-black text-slate-800 dark:text-white">
+                    ${parseFloat(p.price).toFixed(2)}
+                  </td>
                   <td className="py-4 px-6">
                     <div className="flex justify-end gap-2">
                       <button 
@@ -154,6 +200,16 @@ export default function ProductList() {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-neutral-500 uppercase tracking-widest mb-1">Nombre del Producto</label>
                   <input type="text" name="name" required value={formData.name} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none transition-all" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-neutral-500 uppercase tracking-widest mb-1">Categoría</label>
+                  <select name="category_id" required value={formData.category_id} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none cursor-pointer">
+                    <option value="">Seleccione una categoría</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">

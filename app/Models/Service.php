@@ -9,11 +9,16 @@ class Service extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'base_price', 'is_active'];
+    protected $fillable = ['name', 'description', 'base_price', 'is_active', 'category_id', 'duration'];
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     public function products()
     {
-        return $this->belongsToMany(Product::class)
+        return $this->belongsToMany(Product::class, 'service_product')
                     ->withPivot('quantity')
                     ->withTimestamps();
     }

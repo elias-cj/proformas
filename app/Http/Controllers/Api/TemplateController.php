@@ -15,9 +15,11 @@ class TemplateController extends Controller
     {
         $files = \Illuminate\Support\Facades\Storage::disk('public')->files('membretes');
         $templates = collect($files)->map(function($path, $index) {
+            $lastModified = \Illuminate\Support\Facades\Storage::disk('public')->lastModified($path);
+            $date = date('d/m/Y H:i', $lastModified);
             return [
                 'id' => $index + 1,
-                'name' => basename($path),
+                'name' => "Membrete " . ($index + 1) . " (" . $date . ")",
                 'file_path' => $path
             ];
         });

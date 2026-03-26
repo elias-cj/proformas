@@ -28,7 +28,7 @@ class MembreteController extends Controller
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $path = $file->store('membretes', 'public');
-            $url = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            $url = "/storage/" . $path;
 
             return response()->json([
                 'success' => true,

@@ -129,12 +129,16 @@ const ProformaEditor = ({ onBack }) => {
     });
     const [details, setDetails] = useState([emptyRow()]);
 
-    // Fetch templates
-    useEffect(() => {
-        loadGoogleFonts();
+    const fetchTemplates = () => {
         axios.get("/api/templates")
             .then((res) => setTemplates(res.data))
             .catch((err) => console.error("Error loading templates", err));
+    };
+
+    // Fetch templates
+    useEffect(() => {
+        loadGoogleFonts();
+        fetchTemplates();
     }, []);
 
     // Persist backgroundUrl
@@ -171,7 +175,10 @@ const ProformaEditor = ({ onBack }) => {
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        
+        console.log("File selected:", file.name);
         setPreviewFile(file);
+        // Eliminada la vista previa automática (objectUrl) por petición del usuario
     };
 
     const applyMembrete = async () => {
@@ -185,11 +192,24 @@ const ProformaEditor = ({ onBack }) => {
         formData.append("name", previewFile.name);
 
         try {
+            console.log("Uploading membrete...");
             const res = await axios.post("/api/membrete", formData);
-            if (res.data.path) {
-                const cleanPath = res.data.path.startsWith('/') ? res.data.path : `/${res.data.path}`;
-                setBackgroundUrl(`/storage${cleanPath}`);
-                alert("✅ Membrete aplicado correctamente.");
+            console.log("Server response:", res.data);
+            if (res.data.url) {
+                // Aplicamos la URL permanente del servidor
+                const serverUrl = res.data.url;
+                setBackgroundUrl(serverUrl);
+                localStorage.setItem("proforma_background", serverUrl);
+                
+                // Refrescamos la lista de plantillas
+                fetchTemplates();
+                
+                // Intentamos encontrar el ID de esta nueva plantilla para seleccionarla
+                // (Opcional, pero ayuda al usuario a ver qué hay seleccionado)
+                
+                alert("✅ Membrete subido y aplicado correctamente.");
+            } else {
+                console.warn("Server response missing URL");
             }
         } catch (error) {
             console.error("Upload failed", error);
@@ -457,18 +477,6 @@ const ProformaEditor = ({ onBack }) => {
 
             {/* Left Sidebar (Configuración General) */}
             <aside className="w-full xl:w-72 flex flex-col gap-6 no-print">
-                {onBack && (
-                    <button 
-                        onClick={onBack}
-                        className="flex items-center gap-2 text-slate-500 hover:text-blue-900 font-bold transition-colors w-fit bg-white/50 backdrop-blur-md px-4 py-2 rounded-xl border border-white/60 shadow-sm"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        Volver al Historial
-                    </button>
-                )}
-
                 <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2rem] p-8 sticky top-8 animate-in fade-in slide-in-from-left-4 duration-700">
                     <h2 className="text-2xl font-black text-[var(--accent)] mb-6">
                         Editor de Proforma

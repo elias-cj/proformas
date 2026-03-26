@@ -19,10 +19,12 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => 'required|string',
             'code' => 'nullable|string|unique:products',
-            'unit' => 'required|string',
+            'unit' => 'string',
             'price' => 'numeric|min:0',
             'stock' => 'integer|min:0',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'category_id' => 'nullable|exists:categories,id',
+            'brand' => 'nullable|string'
         ]);
 
         $product = Product::create($validated);
@@ -39,10 +41,12 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => 'required|string',
             'code' => 'nullable|string|unique:products,code,' . $product->id,
-            'unit' => 'required|string',
+            'unit' => 'string',
             'price' => 'numeric|min:0',
             'stock' => 'integer|min:0',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'category_id' => 'nullable|exists:categories,id',
+            'brand' => 'nullable|string'
         ]);
 
         $product->update($validated);

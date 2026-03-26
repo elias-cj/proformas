@@ -1,26 +1,46 @@
-import React, { useState } from 'react';
-
-const mockServices = [
-  { id: 1, name: 'Instalación de Circuito Cerrado (CCTV)', duration: 'Aprox. 8 Hrs', price: '$250.00', category: 'Instalaciones' },
-  { id: 2, name: 'Mantenimiento Preventivo Servidores', duration: 'Aprox. 4 Hrs', price: '$180.00', category: 'Mantenimiento' },
-  { id: 3, name: 'Diagnóstico y Cableado Estructurado', duration: 'Variable', price: '$150.00', category: 'Redes' },
-];
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export default function ServiceList() {
-  const [services, setServices] = useState(mockServices);
+  const [services, setServices] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Form State
-  const [formData, setFormData] = useState({ name: '', duration: '', price: '', category: 'Instalaciones' });
+  const [formData, setFormData] = useState({ name: '', duration: '', base_price: '', category_id: '' });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [servicesRes, categoriesRes] = await Promise.all([
+        axios.get('/api/services'),
+        axios.get('/api/categories?type=service')
+      ]);
+      setServices(servicesRes.data);
+      setCategories(categoriesRes.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenModal = (item = null) => {
     if (item) {
       setEditingItem(item);
-      setFormData(item);
+      setFormData({
+        ...item,
+        base_price: item.base_price.toString().replace('$', ''),
+        category_id: item.category_id || ''
+      });
     } else {
       setEditingItem(null);
-      setFormData({ name: '', duration: '', price: '', category: 'Instalaciones' });
+      setFormData({ name: '', duration: '', base_price: '', category_id: '' });
     }
     setIsModalOpen(true);
   };
@@ -34,19 +54,37 @@ export default function ServiceList() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (editingItem) {
-      setServices(services.map(s => s.id === editingItem.id ? { ...formData, id: s.id } : s));
-    } else {
-      setServices([...services, { ...formData, id: Date.now() }]);
+    const dataToSave = {
+      ...formData,
+      base_price: parseFloat(formData.base_price.toString().replace('$', '')) || 0
+    };
+
+    try {
+      if (editingItem) {
+        const response = await axios.put(`/api/services/${editingItem.id}`, dataToSave);
+        setServices(services.map(s => s.id === editingItem.id ? response.data : s));
+      } else {
+        const response = await axios.post('/api/services', dataToSave);
+        setServices([...services, response.data]);
+      }
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error saving service:", error);
+      alert("Error al guardar el servicio");
     }
-    handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este servicio?")) {
-      setServices(services.filter(s => s.id !== id));
+      try {
+        await axios.delete(`/api/services/${id}`);
+        setServices(services.filter(s => s.id !== id));
+      } catch (error) {
+        console.error("Error deleting service:", error);
+        alert("Error al eliminar el servicio");
+      }
     }
   };
 
@@ -92,12 +130,16 @@ export default function ServiceList() {
                     <p className="font-bold text-slate-800 dark:text-white">{s.name}</p>
                   </td>
                   <td className="py-4 px-6 text-center">
-                    <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-bold uppercase tracking-wider">{s.category}</span>
+                    <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-bold uppercase tracking-wider">
+                      {categories.find(cat => cat.id === s.category_id)?.name || 'Sin Categoría'}
+                    </span>
                   </td>
                   <td className="py-4 px-6 text-center font-medium text-slate-500 dark:text-neutral-500">
                     {s.duration}
                   </td>
-                  <td className="py-4 px-6 text-right font-black text-slate-800 dark:text-white">{s.price}</td>
+                  <td className="py-4 px-6 text-right font-black text-slate-800 dark:text-white">
+                    ${parseFloat(s.base_price).toFixed(2)}
+                  </td>
                   <td className="py-4 px-6">
                     <div className="flex justify-end gap-2">
                        <button 
@@ -155,17 +197,16 @@ export default function ServiceList() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-neutral-500 uppercase tracking-widest mb-1">Categoría</label>
-                    <select name="category" required value={formData.category} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none cursor-pointer transition-all">
-                      <option value="Instalaciones">Instalaciones</option>
-                      <option value="Mantenimiento">Mantenimiento</option>
-                      <option value="Redes">Redes</option>
-                      <option value="Soporte Técnico">Soporte Técnico</option>
-                      <option value="Consultoría">Consultoría</option>
+                    <select name="category_id" required value={formData.category_id} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none cursor-pointer transition-all">
+                      <option value="">Seleccione una categoría</option>
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 dark:text-neutral-500 uppercase tracking-widest mb-1">Precio Referencial</label>
-                    <input type="text" name="price" placeholder="$0.00" required value={formData.price} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none transition-all" />
+                    <input type="text" name="base_price" placeholder="$0.00" required value={formData.base_price} onChange={handleChange} className="w-full bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-[var(--accent)] focus:outline-none transition-all" />
                   </div>
                 </div>
 

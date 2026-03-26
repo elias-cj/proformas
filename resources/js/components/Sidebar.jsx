@@ -47,40 +47,79 @@ const navigation = [
       { name: 'Reportes', href: '#' }
     ]
   }
-];
-
-export default function Sidebar({ onNavigate, currentView, darkMode, onToggleDarkMode }) {
+];export default function Sidebar({ onNavigate, onBack, currentView, isCollapsed, onToggleIsCollapsed, darkMode, onToggleDarkMode }) {
   const [openMenus, setOpenMenus] = useState(['Proformas']);
 
   const toggleMenu = (name) => {
+    if (isCollapsed) {
+        onToggleIsCollapsed(); // Expand the sidebar if it was collapsed
+        setOpenMenus([name]);
+        return;
+    }
     setOpenMenus(prev => 
       prev.includes(name) ? prev.filter(m => m !== name) : [...prev, name]
     );
   };
 
   return (
-    <div className="flex flex-col w-64 h-screen bg-white dark:bg-[#141414] text-slate-600 dark:text-neutral-400 border-r border-slate-200 dark:border-neutral-800 shadow-sm overflow-y-auto no-print transition-colors duration-300">
-      <div className="flex items-center gap-3 px-6 h-20 border-b border-slate-100 dark:border-neutral-800 shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center text-white font-bold shadow-lg shadow-[var(--accent-shadow)]">
-          IC
+    <div className={`flex flex-col h-screen bg-white dark:bg-[#141414] text-slate-600 dark:text-neutral-400 border-r border-slate-200 dark:border-neutral-800 shadow-sm overflow-y-auto no-print transition-all duration-300 whitespace-nowrap overflow-x-hidden ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      {/* Header with Toggle / Back */}
+      <div className={`relative flex items-center ${isCollapsed ? 'justify-center px-2' : 'justify-between px-4'} h-20 border-b border-slate-100 dark:border-neutral-800 shrink-0`}>
+        <div className={`flex items-center gap-2 overflow-hidden ${isCollapsed ? 'ml-0' : ''}`}>
+            {/* Back Button (Only in Editor) */}
+            {!isCollapsed && currentView === 'editor' && (
+                <button 
+                    onClick={onBack}
+                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors mr-1"
+                    title="Volver"
+                >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+            )}
+
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-[var(--accent-shadow)] shrink-0 transition-colors`} style={{ backgroundColor: 'var(--accent)' }}>
+            EM
+            </div>
+            {!isCollapsed && (
+                <h1 className="text-sm font-black text-slate-800 dark:text-white tracking-tight uppercase truncate transition-all duration-300">EMPROTEC</h1>
+            )}
         </div>
-        <div className="flex-1 overflow-hidden">
-            <h1 className="text-sm font-bold text-slate-800 dark:text-white tracking-tight uppercase truncate">Emprotec</h1>
-            <p className="text-[9px] font-black text-[var(--accent)] tracking-widest uppercase">Premium Edition</p>
+
+        {/* Action Controls */}
+        <div className={`flex items-center gap-1 ${isCollapsed ? 'absolute -right-0' : ''}`}>
+            <button 
+                onClick={onToggleIsCollapsed}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors shrink-0"
+                title={isCollapsed ? "Expandir" : "Contraer"}
+            >
+                {isCollapsed ? (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                ) : (
+                    <svg className={`w-5 h-5 transition-transform duration-300 rotate-180`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19l-7-7 7-7" />
+                    </svg>
+                )}
+            </button>
         </div>
       </div>
       
-      <div className="p-4 flex-1">
-        <div className="mb-4 px-4 text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest">General</div>
+      <div className="p-3 flex-1">
+        {!isCollapsed && (
+            <div className="mb-4 px-4 text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest">General</div>
+        )}
         <nav className="space-y-1">
           {navigation.map((item) => {
             const isOpen = openMenus.includes(item.name);
             const hasSubs = item.subs && item.subs.length > 0;
             const isAnySubActive = hasSubs && item.subs.some(sub => sub.name.toLowerCase() === currentView);
-            const isActive = item.name.toLowerCase() === currentView || (item.name === 'Proformas' && currentView === 'editor') || isAnySubActive;
+            const isActive = item.name.toLowerCase() === currentView || (item.name === 'Proformas' && (currentView === 'editor' || currentView === 'proformas')) || isAnySubActive;
 
             return (
-              <div key={item.name}>
+              <div key={item.name} className="relative group">
                 <button
                   onClick={() => {
                     if (item.name === 'Proformas' || item.name === 'Dashboard') {
@@ -88,39 +127,44 @@ export default function Sidebar({ onNavigate, currentView, darkMode, onToggleDar
                     }
                     if (hasSubs) toggleMenu(item.name);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-200 ${
                     isActive
-                      ? 'bg-[var(--accent-soft)] text-[var(--accent)] font-bold shadow-sm'
-                      : 'hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-white'
+                      ? 'font-bold'
+                      : 'hover:bg-slate-50 dark:hover:bg-neutral-800/50 hover:text-slate-900 dark:hover:text-white'
                   }`}
+                  style={{ 
+                    color: isActive ? 'var(--accent)' : '',
+                    backgroundColor: isActive ? 'var(--accent-soft)' : ''
+                  }}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`transition-colors ${isActive ? 'text-[var(--accent)] text-opacity-80' : 'text-slate-400 dark:text-neutral-600'}`}>{item.icon}</span>
-                    <span className={`text-[13px] tracking-tight ${isActive ? '' : 'text-slate-600 dark:text-neutral-400'}`}>{item.name}</span>
+                  <div className="flex items-center gap-4">
+                    <span className={`transition-colors h-5 w-5 flex items-center justify-center`} style={{ color: isActive ? 'var(--accent)' : '' }}>{item.icon}</span>
+                    {!isCollapsed && <span className="text-[14px] tracking-tight">{item.name}</span>}
                   </div>
-                  {hasSubs && (
-                     <svg className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[var(--accent)]' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {!isCollapsed && hasSubs && (
+                     <svg className={`w-3 h-3 transition-transform duration-300 ${isOpen ? 'rotate-180' : 'text-slate-400'}`} style={{ color: isOpen ? 'var(--accent)' : 'inherit' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                      </svg>
                   )}
                 </button>
                 
-                {hasSubs && (
+                {!isCollapsed && hasSubs && (
                   <div 
                     className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[500px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}
                   >
-                    <div className="pl-11 pr-2 py-1 space-y-1">
+                    <div className="pl-12 pr-2 py-1 space-y-1">
                       {item.subs.map((sub) => {
                         const isSubActive = currentView === sub.name.toLowerCase();
                         return (
                           <button
                             key={sub.name}
                             onClick={() => onNavigate(sub.name.toLowerCase())}
-                            className={`w-full text-left block px-3 py-2 rounded-lg text-[12px] font-medium transition-all ${
+                            className={`w-full text-left block px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
                               isSubActive
-                                ? 'text-[var(--accent)] font-bold'
+                                ? 'font-bold'
                                 : 'text-slate-500 dark:text-neutral-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-neutral-800'
                             }`}
+                            style={{ color: isSubActive ? 'var(--accent)' : '' }}
                           >
                             {sub.name}
                           </button>
@@ -135,53 +179,47 @@ export default function Sidebar({ onNavigate, currentView, darkMode, onToggleDar
         </nav>
       </div>
       
-      <div className="p-4 border-t border-slate-100 dark:border-neutral-800 space-y-3 shrink-0">
-        <div className="flex items-center justify-between px-2 mb-2">
-            <span className="text-[10px] font-black text-slate-400 dark:text-neutral-600 uppercase tracking-widest">Tema</span>
-            <button 
-                onClick={onToggleDarkMode}
-                className={`w-10 h-5 rounded-full relative transition-all duration-500 ${darkMode ? 'bg-[var(--accent)] shadow-lg shadow-[var(--accent-shadow)]' : 'bg-slate-200 shadow-inner'}`}
-            >
-                <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-500 ${darkMode ? 'translate-x-5' : ''}`} />
-            </button>
-        </div>
+      <div className="p-3 border-t border-slate-100 dark:border-neutral-800 space-y-2 shrink-0">
+        <button
+            onClick={() => onNavigate('usuarios')}
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 group ${
+                currentView === 'usuarios' ? 'font-bold' : 'hover:bg-slate-50 dark:hover:bg-neutral-800/50'
+            }`}
+            style={{ 
+                color: currentView === 'usuarios' ? 'var(--accent)' : '',
+                backgroundColor: currentView === 'usuarios' ? 'var(--accent-soft)' : ''
+            }}
+        >
+            <span className={`transition-colors h-5 w-5 flex items-center justify-center`} style={{ color: currentView === 'usuarios' ? 'var(--accent)' : '' }}>
+                {icons.config}
+            </span>
+            {!isCollapsed && (
+                <span className={`text-[14px] tracking-tight ${currentView === 'usuarios' ? '' : 'text-slate-600 dark:text-neutral-400 font-semibold'}`}>
+                    Configuración
+                </span>
+            )}
+        </button>
 
-        <div className="mb-2">
-            <button
-                onClick={() => onNavigate('usuarios')}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-300 group ${
-                    currentView === 'usuarios' ? 'bg-[var(--accent-soft)] text-[var(--accent)] font-bold' : 'hover:bg-slate-50 dark:hover:bg-neutral-800'
-                }`}
-            >
-                <div className="flex items-center gap-3">
-                    <span className={`transition-colors ${currentView === 'usuarios' ? 'text-[var(--accent)]' : 'text-slate-400 dark:text-neutral-600 group-hover:text-[var(--accent)]'}`}>
-                        {icons.config}
-                    </span>
-                    <span className={`text-[13px] tracking-tight ${currentView === 'usuarios' ? 'text-[var(--accent)]' : 'text-slate-600 dark:text-neutral-400 group-hover:text-slate-900 dark:group-hover:text-white font-semibold'}`}>
-                        Configuración
-                    </span>
-                </div>
-            </button>
-        </div>
-
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-neutral-900/50 border border-slate-100 dark:border-neutral-800 transition-all">
-          <div className="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
+        <div className={`flex items-center gap-3 p-3 rounded-2xl bg-slate-100/50 dark:bg-neutral-900/50 border border-slate-200/50 dark:border-neutral-800 transition-all ${isCollapsed ? 'justify-center' : ''}`}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-sm transition-colors" style={{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' }}>
             AD
           </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="text-[12px] font-bold text-slate-800 dark:text-neutral-200 truncate">Administrador</p>
-            <p className="text-[10px] text-slate-500 dark:text-neutral-500 truncate">admin@emprotec.com</p>
-          </div>
+          {!isCollapsed && (
+            <div className="flex-1 overflow-hidden">
+                <p className="text-[13px] font-bold text-slate-800 dark:text-neutral-200 truncate leading-none mb-1">admin@admin.com</p>
+                <p className="text-[11px] text-slate-500 dark:text-neutral-500 truncate">Superadministrador</p>
+            </div>
+          )}
         </div>
 
         <button 
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 rounded-lg text-[12px] font-bold text-slate-400 dark:text-neutral-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all active:scale-95 group"
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-[14px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all active:scale-95 group ${isCollapsed ? 'justify-center' : ''}`}
             onClick={() => {}}
         >
-            <svg className="w-4 h-4 text-slate-400 group-hover:text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 0 01-3 3H6a3 0 01-3-3V7a3 0 013-3h4a3 0 013 3v1" />
+            <svg className="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 0 01-3-3V7a3 0 013-3h4a3 0 013 3v1" />
             </svg>
-            Cerrar Sesión
+            {!isCollapsed && "Cerrar Sesión"}
         </button>
       </div>
     </div>

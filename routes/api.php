@@ -27,6 +27,15 @@ Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login'])
 Route::get('/templates', [TemplateController::class, 'index']);
 Route::post('/membrete', [MembreteController::class, 'store']);
 
+// Rutas de Epic 2 (Catálogos) y Epic 3 (Proformas) para pruebas (Plicas)
+Route::apiResource('categories', App\Http\Controllers\Api\CategoryController::class);
+Route::apiResource('customers', App\Http\Controllers\Api\CustomerController::class);
+Route::apiResource('services', App\Http\Controllers\Api\ServiceController::class);
+Route::apiResource('products', App\Http\Controllers\Api\ProductController::class);
+Route::apiResource('proformas', App\Http\Controllers\Api\ProformaController::class);
+Route::get('/proformas/{proforma}/pdf', [App\Http\Controllers\Api\ProformaController::class, 'generatePdf']);
+Route::get('/proformas/{proforma}/whatsapp', [App\Http\Controllers\Api\ProformaController::class, 'whatsapp']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
     Route::get('/me', [App\Http\Controllers\Api\AuthController::class, 'me']);
@@ -36,16 +45,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('correlatives', CorrelativeController::class);
     Route::apiResource('roles', RoleController::class);
     Route::apiResource('users', UserController::class);
-
-    // Rutas de Epic 2 (Catálogos)
-    Route::apiResource('customers', App\Http\Controllers\Api\CustomerController::class);
-    Route::apiResource('services', App\Http\Controllers\Api\ServiceController::class);
-    Route::apiResource('products', App\Http\Controllers\Api\ProductController::class);
-
-    // Rutas de Epic 3 (Proformas)
-    Route::apiResource('proformas', App\Http\Controllers\Api\ProformaController::class);
-    Route::get('/proformas/{proforma}/pdf', [App\Http\Controllers\Api\ProformaController::class, 'generatePdf']);
-    Route::get('/proformas/{proforma}/whatsapp', [App\Http\Controllers\Api\ProformaController::class, 'whatsapp']);
 
     // Rutas de Epic 4 (Órdenes de Trabajo)
     Route::apiResource('technicians', App\Http\Controllers\Api\TechnicianController::class);

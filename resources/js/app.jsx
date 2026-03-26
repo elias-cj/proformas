@@ -14,7 +14,9 @@ import TechnicianList from './components/TechnicianList';
 import UserManagement from './components/UserManagement';
 
 const RootApp = () => {
-    const [currentView, setCurrentView] = React.useState('dashboard');
+    const [currentView, setCurrentView] = React.useState(() => {
+        return localStorage.getItem('currentView') || 'dashboard';
+    });
     const [darkMode, setDarkMode] = React.useState(() => {
         return localStorage.getItem('theme') === 'dark' || 
                (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -22,6 +24,10 @@ const RootApp = () => {
     const [accentColor, setAccentColor] = React.useState(() => {
         return localStorage.getItem('accent-color') || 'blue';
     });
+
+    React.useEffect(() => {
+        localStorage.setItem('currentView', currentView);
+    }, [currentView]);
 
     React.useEffect(() => {
         if (darkMode) {
@@ -74,6 +80,8 @@ const RootApp = () => {
 
 const rootElement = document.getElementById('proforma-editor');
 if (rootElement) {
-    const root = createRoot(rootElement);
-    root.render(<RootApp />);
+    if (!window._reactRoot) {
+        window._reactRoot = createRoot(rootElement);
+    }
+    window._reactRoot.render(<RootApp />);
 }
