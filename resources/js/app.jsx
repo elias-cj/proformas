@@ -7,11 +7,11 @@ import ProformaList from './components/ProformaList';
 import ProformaEditor from './components/ProformaEditor';
 import CustomerList from './components/CustomerList';
 import CategoryList from './components/CategoryList';
-import ProductList from './components/ProductList';
-import ServiceList from './components/ServiceList';
+import ItemList from './components/ItemList';
 import OrderList from './components/OrderList';
 import TechnicianList from './components/TechnicianList';
 import UserManagement from './components/UserManagement';
+import PaymentMethodList from './components/PaymentMethodList';
 
 const RootApp = () => {
     const [currentView, setCurrentView] = React.useState(() => {
@@ -61,11 +61,16 @@ const RootApp = () => {
                 <ProformaEditor onBack={() => setCurrentView('proformas')} />
             )}
             {currentView === 'clientes' && <CustomerList />}
+            {currentView === 'artículos' && <ItemList />}
             {currentView === 'categorías' && <CategoryList />}
-            {currentView === 'productos' && <ProductList />}
-            {currentView === 'servicios' && <ServiceList />}
-            {currentView === 'historial y asignar' && <OrderList />}
+            
+            {/* Work Orders Views */}
+            {currentView === 'en espera' && <OrderList filterStatus="en_espera" />}
+            {currentView === 'en proceso' && <OrderList filterStatus="en_proceso" />}
+            {currentView === 'historial' && <OrderList filterStatus="completada" />}
+            
             {currentView === 'técnicos' && <TechnicianList />}
+            {currentView === 'métodos de pago' && <PaymentMethodList />}
             {currentView === 'usuarios' && (
                 <UserManagement 
                     darkMode={darkMode} 

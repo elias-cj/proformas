@@ -74,17 +74,45 @@ const ProformaEditor = ({ onBack }) => {
     const [previewFile, setPreviewFile] = useState(null);
     const [discount, setDiscount] = useState(0);
     const [showTerms, setShowTerms] = useState(true);
-    const [termsMode, setTermsMode] = useState('compact'); // 'detailed', 'compact', 'ultra'
-    const [termsPosition, setTermsPosition] = useState('flow'); // 'fixed', 'flow'
+    const [termsMode, setTermsMode] = useState('compact'); 
+    const [termsPosition, setTermsPosition] = useState('flow'); 
     const [customerName, setCustomerName] = useState("");
     const [customerDoc, setCustomerDoc] = useState("");
     const [advisorName, setAdvisorName] = useState("");
     const [advisorPhone, setAdvisorPhone] = useState("");
+    const [quoteNumber, setQuoteNumber] = useState("20260001");
+    const [quoteDate, setQuoteDate] = useState(new Date().toISOString().split('T')[0]);
+    const [validDays, setValidDays] = useState(15);
     const [focusedElement, setFocusedElement] = useState(null);
-    const [lastFocusedId, setLastFocusedId] = useState(null); // { id, type }
+    const [lastFocusedId, setLastFocusedId] = useState(null); 
+    const [availableItems, setAvailableItems] = useState([]);
+    const [showItemPicker, setShowItemPicker] = useState(null); 
     const fileInputRef = useRef(null);
+    const itemPickerRef = useRef(null);
 
-    // Estados para redimensionamiento personalizado
+    // Dynamic Calculation for Valid Until
+    const validUntil = useMemo(() => {
+        if (!quoteDate) return "";
+        try {
+            const d = new Date(quoteDate);
+            if (isNaN(d.getTime())) return "";
+            d.setDate(d.getDate() + 1 + parseInt(validDays || 0)); 
+            return d.toLocaleDateString('es-ES');
+        } catch (e) {}
+        return "";
+    }, [quoteDate, validDays]);
+
+    // Fetch total proformance count to set next consecutive number
+    useEffect(() => {
+        axios.get("/api/proformas")
+            .then((res) => {
+                const count = (res.data.length || 0) + 1;
+                const paddedCount = String(count).padStart(4, '0');
+                setQuoteNumber(`2026${paddedCount}`);
+            })
+            .catch((err) => console.error("Error loading sequence", err));
+    }, []);
+
     const [colWidths, setColWidths] = useState({
         item: 35,
         description: 287,
@@ -93,8 +121,8 @@ const ProformaEditor = ({ onBack }) => {
         price: 80,
         total: 85
     });
-    const [manualRowHeights, setManualRowHeights] = useState({}); // id -> height manual
-    const [autoRowHeights, setAutoRowHeights] = useState({});   // id -> height auto (según contenido)
+    const [manualRowHeights, setManualRowHeights] = useState({}); 
+    const [autoRowHeights, setAutoRowHeights] = useState({});   
 
     const addRow = () => {
         const lastRow = details[details.length - 1];
@@ -107,7 +135,6 @@ const ProformaEditor = ({ onBack }) => {
         }
     };
 
-    // Initial empty row with style inheritance
     const emptyRow = (prevStyle = null) => ({
         id: Math.random().toString(36).substr(2, 9),
         description: "",
@@ -135,13 +162,14 @@ const ProformaEditor = ({ onBack }) => {
             .catch((err) => console.error("Error loading templates", err));
     };
 
-    // Fetch templates
     useEffect(() => {
         loadGoogleFonts();
         fetchTemplates();
+        axios.get("/api/items")
+            .then(res => setAvailableItems(res.data))
+            .catch(err => console.error("Error loading items", err));
     }, []);
 
-    // Persist backgroundUrl
     useEffect(() => {
         if (backgroundUrl) {
             localStorage.setItem("proforma_background", backgroundUrl);
@@ -150,7 +178,6 @@ const ProformaEditor = ({ onBack }) => {
         }
     }, [backgroundUrl]);
 
-    // Derived totals
     const subtotal = useMemo(() => {
         return details.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
     }, [details]);
@@ -175,10 +202,7 @@ const ProformaEditor = ({ onBack }) => {
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
-        console.log("File selected:", file.name);
         setPreviewFile(file);
-        // Eliminada la vista previa automática (objectUrl) por petición del usuario
     };
 
     const applyMembrete = async () => {
@@ -192,31 +216,17 @@ const ProformaEditor = ({ onBack }) => {
         formData.append("name", previewFile.name);
 
         try {
-            console.log("Uploading membrete...");
             const res = await axios.post("/api/membrete", formData);
-            console.log("Server response:", res.data);
             if (res.data.url) {
-                // Aplicamos la URL permanente del servidor
                 const serverUrl = res.data.url;
                 setBackgroundUrl(serverUrl);
                 localStorage.setItem("proforma_background", serverUrl);
-                
-                // Refrescamos la lista de plantillas
                 fetchTemplates();
-                
-                // Intentamos encontrar el ID de esta nueva plantilla para seleccionarla
-                // (Opcional, pero ayuda al usuario a ver qué hay seleccionado)
-                
                 alert("✅ Membrete subido y aplicado correctamente.");
-            } else {
-                console.warn("Server response missing URL");
             }
         } catch (error) {
             console.error("Upload failed", error);
-            const errorMsg = error.response?.data?.messages 
-                ? Object.values(error.response.data.messages).flat().join("\n")
-                : "Error desconocido al subir el archivo.";
-            alert(`❌ Error al subir el membrete:\n${errorMsg}`);
+            alert("❌ Error al subir el membrete.");
         }
     };
 
@@ -234,7 +244,6 @@ const ProformaEditor = ({ onBack }) => {
             return row;
         });
 
-        // Auto add row logic with style inheritance
         const lastRow = newDetails[newDetails.length - 1];
         if (lastRow.description.trim() !== "" && lastRow.id === id) {
             newDetails.push(emptyRow(lastRow.style));
@@ -243,332 +252,255 @@ const ProformaEditor = ({ onBack }) => {
         setDetails(newDetails);
     };
 
-    // Lógica de redimensionamiento manual (Drag & Resize)
+    const selectItem = (rowId, item) => {
+        const newDetails = details.map(row => {
+            if (row.id === rowId) {
+                return {
+                    ...row,
+                    item_id: item.id,
+                    description: item.name,
+                    marca: item.brand || "",
+                    unit_price: item.price,
+                    quantity: 1,
+                    total: (1 * item.price).toFixed(2),
+                };
+            }
+            return row;
+        });
+
+        const lastRow = newDetails[newDetails.length - 1];
+        if (lastRow.id === rowId && lastRow.description.trim() !== "") {
+            newDetails.push(emptyRow(lastRow.style));
+        }
+        
+        setDetails(newDetails);
+        setShowItemPicker(null);
+    };
+
     const handleMouseDownCol = (e, col) => {
         const startX = e.pageX;
         const startWidth = colWidths[col];
-        
         const onMouseMove = (moveEvent) => {
             const newWidth = Math.max(30, startWidth + (moveEvent.pageX - startX));
             setColWidths(prev => ({ ...prev, [col]: newWidth }));
         };
-        
         const onMouseUp = () => {
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
         };
-        
         document.addEventListener("mousemove", onMouseMove);
         document.addEventListener("mouseup", onMouseUp);
     };
 
-    const handleMouseDownRow = (e, rowId) => {
+    const handleMouseDownRow = (e, id) => {
         const startY = e.pageY;
-        const startHeight = manualRowHeights[rowId] || autoRowHeights[rowId] || 32;
-        
+        const startHeight = manualRowHeights[id] || 35;
         const onMouseMove = (moveEvent) => {
-            const newHeight = Math.max(20, startHeight + (moveEvent.pageY - startY));
-            setManualRowHeights(prev => ({ ...prev, [rowId]: newHeight }));
+            const newHeight = Math.max(10, startHeight + (moveEvent.pageY - startY));
+            setManualRowHeights(prev => ({ ...prev, [id]: newHeight }));
         };
-        
         const onMouseUp = () => {
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
         };
-        
         document.addEventListener("mousemove", onMouseMove);
         document.addEventListener("mouseup", onMouseUp);
     };
 
-
-
-    const paperStyle = {
-        width: paperSize === "A4" ? "210mm" : "8.5in",
-        minHeight: paperSize === "A4" ? "297mm" : "11in",
-        backgroundImage: backgroundUrl ? `url("${backgroundUrl}")` : "none",
-        backgroundSize: paperSize === "A4" ? "210mm 297mm" : "8.5in 11in",
-        backgroundPosition: "top center",
-        backgroundRepeat: "no-repeat", // Cambiado a no-repeat porque cada hoja tendrá su fondo
-        fontFamily: `'${globalFont}', sans-serif`,
-        WebkitFontSmoothing: "antialiased",
-        MozOsxFontSmoothing: "grayscale",
-        textRendering: "optimizeLegibility",
-        imageRendering: "-webkit-optimize-contrast"
-    };
-
-    const updateItemStyle = (id, styleKey, value) => {
+    const toggleStyle = (styleKey) => {
+        if (!focusedElement) return;
         setDetails(details.map(row => {
-            if (row.id === id) {
-                const currentStyle = row.style || emptyRow().style;
-                return { ...row, style: { ...currentStyle, [styleKey]: value } };
+            if (row.id === focusedElement.id) {
+                return { ...row, style: { ...row.style, [styleKey]: !row.style[styleKey] } };
             }
             return row;
         }));
     };
 
-    // Lógica de Paginación Dinámica (Sensible al alto de fila)
+    const updateStyle = (key, val) => {
+        if (!focusedElement) return;
+        setDetails(details.map(row => {
+            if (row.id === focusedElement.id) {
+                return { ...row, style: { ...row.style, [key]: val } };
+            }
+            return row;
+        }));
+    };
+
+    const applyStyleToAll = (styleKey, val) => {
+        setDetails(details.map(row => ({
+            ...row,
+            style: { ...row.style, [styleKey]: val }
+        })));
+    };
+
     const pages = useMemo(() => {
+        const maxContentHeight = 185; 
         const result = [];
         let currentPageRows = [];
         let currentHeight = 0;
-        
-        // Constantes de diseño (en píxeles a 96 DPI)
-        const A4_HEIGHT = 1123; // 297mm
-        const CM_TO_PX = 37.8;
-        const HEADER_ESTIMATED = 120; // Espacio real ocupado por Advisor/Fecha
-        const LOGO_RESERVE = 34;      // Subido 1cm más (era 72)
-        const TABLE_HEADER = 35;
-        const FOOTER_TOTAL = 80;      
-        const TERMS_BOX = 300; 
-        const SAFETY_BUFFER = 60;     // Aumentado: margen de seguridad extra
 
-        const marginV = (margins.top + margins.bottom + 3.0) * CM_TO_PX;
-        const firstPageLimit = A4_HEIGHT - marginV - HEADER_ESTIMATED - TABLE_HEADER - SAFETY_BUFFER;
-        const otherPageLimit = A4_HEIGHT - marginV - LOGO_RESERVE - TABLE_HEADER - SAFETY_BUFFER;
-
-        details.forEach((row, index) => {
-            const h = Math.max(32, manualRowHeights[row.id] || 0, autoRowHeights[row.id] || 0);
-            const isFirstPage = result.length === 0;
-            const limit = isFirstPage ? firstPageLimit : otherPageLimit;
-            
-            const isLastTotalRow = index === details.length - 1;
-            // Si es el último ítem, comprobamos si cabe él Y el Total
-            const spaceNeeded = isLastTotalRow ? (h + FOOTER_TOTAL) : h;
-
-            const isSecondPage = result.length === 1;
-            const shouldJumpP1ByCount = isFirstPage && index === 13; 
-            const shouldJumpP2ByCount = isSecondPage && index === 32;
-            
-            // Reglas estrictas por conteo para las primeras dos hojas
-            let jump = false;
-            if (isFirstPage) {
-                jump = shouldJumpP1ByCount;
-            } else if (isSecondPage) {
-                jump = shouldJumpP2ByCount;
-            } else {
-                jump = currentHeight + spaceNeeded > limit;
-            }
-
-            if (jump && currentPageRows.length > 0) {
+        details.forEach((row) => {
+            const rowHeight = Math.max(13, manualRowHeights[row.id] || 0, autoRowHeights[row.id] || 0) / 3.78; 
+            if (currentHeight + rowHeight > maxContentHeight) {
                 result.push(currentPageRows);
                 currentPageRows = [row];
-                currentHeight = h;
+                currentHeight = rowHeight;
             } else {
                 currentPageRows.push(row);
-                currentHeight += h;
+                currentHeight += rowHeight;
             }
         });
+        if (currentPageRows.length > 0) result.push(currentPageRows);
+        return result.length > 0 ? result : [[]];
+    }, [details, manualRowHeights, autoRowHeights]);
 
-        if (currentPageRows.length > 0) {
-            result.push(currentPageRows);
-            
-            // INDEPENDIENTE: ¿Caben los términos en lo que queda de la última hoja? O ¿Han pasado el ítem 7?
-            const isFirst = result.length === 1;
-            const hasSevenOrMore = details.length >= 7;
-            const limit = isFirst ? firstPageLimit : otherPageLimit;
-            
-            if (isFirst) {
-                if (hasSevenOrMore) {
-                    // REGLA: A partir del ítem 7, los términos saltan automáticamente
-                    result.push([]);
-                }
-                // Ignoramos el espacio físico en la Pág 1 para evitar saltos prematuros al ítem 4
-            } else if (result.length === 2 && details.length < 27) {
-                // REGLA PÁG 2: No saltar términos hasta el ítem 27 (ignorar espacio físico)
-            } else if (currentHeight + FOOTER_TOTAL + TERMS_BOX > limit) {
-                // Salto por espacio físico en hojas subsecuentes
-                result.push([]);
-            }
-        }
-        
-        if (result.length === 0) result.push([]);
-        return result;
-    }, [details, manualRowHeights, autoRowHeights, margins, paperSize]);
-
-    const FloatingToolbar = () => {
-        const activeId = focusedElement?.id || lastFocusedId;
-        const row = details.find(r => r.id === activeId);
-        const isInactive = !row;
-
-        return (
-            <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-white/90 backdrop-blur-3xl border border-white/60 shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-2xl p-3 flex items-center gap-2 transition-all duration-500 ${isInactive ? 'opacity-50 grayscale pointer-events-none scale-95' : 'opacity-100'}`}>
-                {!isInactive ? (
-                    <>
-                        <div className="flex items-center bg-gray-50 rounded-xl px-2 py-1 border border-gray-100 gap-2">
-                            <input 
-                                type="number" 
-                                min="1" 
-                                max="100"
-                                value={parseInt(row.style?.fontSize) || 12} 
-                                onChange={e => updateItemStyle(row.id, 'fontSize', `${e.target.value}px`)}
-                                className="bg-transparent border-none text-[12px] font-bold focus:ring-0 w-8 p-0 text-center"
-                                title="Tamaño manual"
-                            />
-                            <select 
-                                value={row.style?.fontSize} 
-                                onChange={e => updateItemStyle(row.id, 'fontSize', e.target.value)}
-                                className="bg-transparent border-none text-[11px] font-bold focus:ring-0 cursor-pointer p-0 w-5 text-gray-500"
-                                title="Tamaños predefinidos"
-                            >
-                                <option value="" hidden></option>
-                                {['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '48px'].map(s => (
-                                    <option key={s} value={s} className="text-slate-900">{s.replace('px', '')}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="w-px h-6 bg-gray-200 mx-1" />
-                        <select 
-                            value={row.style?.font || globalFont} 
-                            onChange={e => updateItemStyle(row.id, 'font', e.target.value)}
-                            className="bg-transparent border-none text-[12px] font-bold focus:ring-0 cursor-pointer max-w-[140px] overflow-hidden text-ellipsis px-2"
-                            style={{ fontFamily: row.style?.font ? `'${row.style.font}', sans-serif` : 'inherit' }}
-                        >
-                            {[
-                                'Arial', 'Arial Black', 'Trebuchet MS', 'Times New Roman',
-                                'Inter', 'Montserrat', 'Roboto', 'Open Sans', 'Poppins', 
-                                'Playfair Display', 'Lora', 'Oswald', 
-                                'Dancing Script', 'Pacifico'
-                            ].map(f => (
-                                <option key={f} value={f} style={{ fontFamily: `'${f}', sans-serif` }}>{f}</option>
-                            ))}
-                        </select>
-                        <div className="w-px h-6 bg-gray-200 mx-1" />
-                        <button onClick={() => updateItemStyle(row.id, 'bold', !row.style?.bold)} className={`p-2.5 rounded-xl transition-all ${row.style?.bold ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Negrita"><b className="text-[14px]">B</b></button>
-                        <button onClick={() => updateItemStyle(row.id, 'italic', !row.style?.italic)} className={`p-2.5 rounded-xl transition-all ${row.style?.italic ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Cursiva"><i className="text-[14px]">I</i></button>
-                        <button onClick={() => updateItemStyle(row.id, 'underline', !row.style?.underline)} className={`p-2.5 rounded-xl transition-all ${row.style?.underline ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Subrayado"><u className="text-[14px]">U</u></button>
-                        <button onClick={() => updateItemStyle(row.id, 'strike', !row.style?.strike)} className={`p-2.5 rounded-xl transition-all ${row.style?.strike ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Tachado"><s className="text-[14px]">S</s></button>
-                        <div className="w-px h-6 bg-gray-200 mx-1" />
-                        <button onClick={() => updateItemStyle(row.id, 'align', 'left')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'left' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Alinear a la izquierda">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h10M4 18h16" /></svg>
-                        </button>
-                        <button onClick={() => updateItemStyle(row.id, 'align', 'center')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'center' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Centrar">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M7 12h10M4 18h16" /></svg>
-                        </button>
-                        <button onClick={() => updateItemStyle(row.id, 'align', 'right')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'right' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Alinear a la derecha">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M10 12h10M4 18h16" /></svg>
-                        </button>
-                        <button onClick={() => updateItemStyle(row.id, 'align', 'justify')} className={`p-2 rounded-xl transition-all ${row.style?.align === 'justify' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'hover:bg-gray-100 text-gray-500'}`} title="Justificar">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        </button>
-                        <div className="w-px h-6 bg-gray-200 mx-1" />
-                        <select 
-                            value={row.style?.lineHeight} 
-                            onChange={e => updateItemStyle(row.id, 'lineHeight', e.target.value)}
-                            className="bg-transparent border-none text-[12px] font-bold focus:ring-0 cursor-pointer px-1"
-                        >
-                            {['1.0', '1.2', '1.5', '2.0'].map(lh => <option key={lh} value={lh}>{lh}</option>)}
-                        </select>
-                        <input type="color" value={row.style?.color || '#000000'} onChange={e => updateItemStyle(row.id, 'color', e.target.value)} className="w-7 h-7 border-none bg-transparent cursor-pointer rounded-full overflow-hidden" />
-                    </>
-                ) : (
-                    <span className="text-[10px] font-bold text-gray-400 px-4 py-1 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-gray-300 rounded-full animate-pulse" />
-                        Selecciona un texto para editar su formato
-                    </span>
-                )}
-            </div>
-        );
+    const paperStyle = {
+        width: paperSize === "A4" ? "210mm" : "8.5in",
+        padding: 0,
+        background: backgroundUrl ? `url("${backgroundUrl}")` : "white",
+        backgroundSize: "100% 100%",
+        backgroundRepeat: "no-repeat",
+        position: "relative"
     };
 
     return (
-        <div className="flex flex-col xl:flex-row w-full min-h-screen bg-[#f1f5f9] font-sans selection:bg-[var(--accent-soft)] p-4 xl:p-6 gap-6 justify-center">
-            {/* Canva Style Toolbar */}
-            <FloatingToolbar />
-
-            {/* Left Sidebar (Configuración General) */}
-            <aside className="w-full xl:w-72 flex flex-col gap-6 no-print">
-                <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2rem] p-8 sticky top-8 animate-in fade-in slide-in-from-left-4 duration-700">
-                    <h2 className="text-2xl font-black text-[var(--accent)] mb-6">
-                        Editor de Proforma
-                    </h2>
-
-                    <div className="space-y-5">
-                        <section>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Formato</label>
-                            <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
-                                {["A4", "Carta"].map((size) => (
-                                    <button
-                                        key={size}
-                                        onClick={() => setPaperSize(size === "Carta" ? "Letter" : "A4")}
-                                        className={`py-2 text-sm font-bold rounded-lg transition-all ${
-                                            (paperSize === "A4" && size === "A4") || (paperSize === "Letter" && size === "Carta")
-                                                ? "bg-white text-[var(--accent)] shadow-sm scale-[1.02]"
-                                                : "text-gray-500 hover:text-gray-700"
-                                        }`}
-                                    >
-                                        {size}
-                                    </button>
-                                ))}
-                            </div>
-                        </section>
-
-                        <section>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Membrete</label>
-                            <select
-                                value={selectedTemplate}
-                                onChange={(e) => handleTemplateChange(e.target.value)}
-                                className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[var(--accent)] transition-all cursor-pointer"
-                            >
-                                <option value="">Original (Limpio)</option>
-                                {templates.map((t) => (
-                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                ))}
-                            </select>
-                            <div className="mt-3 space-y-3">
-                                <label className="flex items-center justify-center gap-2 w-full py-4 border-2 border-dashed border-[var(--accent-soft)] rounded-xl cursor-pointer hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] transition-all active:scale-[0.98] bg-white group">
-                                    <span className={`text-[10px] font-black tracking-widest uppercase text-center px-4 overflow-hidden text-ellipsis whitespace-nowrap transition-colors ${previewFile ? 'text-emerald-600' : 'text-[var(--accent)]'}`}>
-                                        {previewFile ? `✅ SELECCIONADO: ${previewFile.name}` : "👉 CLIC AQUÍ PARA SELECCIONAR"}
-                                    </span>
-                                    <input 
-                                        ref={fileInputRef}
-                                        type="file" 
-                                        className="hidden" 
-                                        accept="image/*" 
-                                        onChange={handleFileUpload} 
-                                    />
-                                </label>
-
-                                <button 
-                                    onClick={applyMembrete}
-                                    disabled={!previewFile}
-                                    className={`w-full text-[11px] font-black py-4 rounded-xl transition-all shadow-xl active:scale-95 ${
-                                        previewFile 
-                                        ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20 cursor-pointer" 
-                                        : "bg-gray-100 text-gray-400 shadow-none cursor-not-allowed border border-gray-200"
-                                    }`}
-                                >
-                                    APLICAR COMO MEMBRETE
-                                </button>
-
-                                {backgroundUrl && (
-                                    <button 
-                                        onClick={() => {
-                                            setBackgroundUrl("");
-                                            setPreviewFile(null);
-                                            setSelectedTemplate("");
-                                            if (fileInputRef.current) {
-                                                fileInputRef.current.value = "";
-                                            }
-                                        }}
-                                        className="w-full text-[10px] font-black py-3 rounded-xl border-2 border-rose-100 text-rose-500 hover:bg-rose-50 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                        QUITAR MEMBRETE
-                                    </button>
-                                )}
-                            </div>
-                        </section>
-
-                            <div className="mt-4 pt-4 border-t border-slate-100">
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] text-center">Configuración de Página</p>
-                            </div>
+        <div className="min-h-screen bg-slate-900 flex flex-col xl:flex-row gap-0 overflow-hidden font-inter selection:bg-rose-100 selection:text-rose-900">
+            <aside className="w-full xl:w-96 bg-white/95 backdrop-blur-3xl border-r border-slate-200 shadow-2xl flex flex-col z-[100] no-print">
+                <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-gradient-to-br from-slate-50 to-white">
+                    <div>
+                        <h2 className="text-2xl font-[900] text-slate-900 tracking-tighter flex items-center gap-3">
+                            <div className="w-3 h-10 bg-[var(--accent)] rounded-full animate-pulse" />
+                            EDITOR <span className="text-[var(--accent)]">PRO</span>
+                        </h2>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1 ml-6">Precision Document Design</p>
                     </div>
+                    <button onClick={onBack} className="p-3 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-2xl transition-all duration-300 group active:scale-90">
+                        <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                    <section>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 block">Configuración de Página</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => setPaperSize("A4")} className={`py-4 px-2 rounded-2xl border-2 transition-all duration-500 font-black text-xs ${paperSize === "A4" ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-lg shadow-[var(--accent-shadow)]" : "border-slate-100 text-slate-400 hover:border-slate-200 bg-slate-50/50"}`}>A4 (210x297)</button>
+                            <button onClick={() => setPaperSize("Letter")} className={`py-4 px-2 rounded-2xl border-2 transition-all duration-500 font-black text-xs ${paperSize === "Letter" ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-lg shadow-[var(--accent-shadow)]" : "border-slate-100 text-slate-400 hover:border-slate-200 bg-slate-50/50"}`}>CARTA (8.5x11)</button>
+                        </div>
+                    </section>
+
+                    <section className="bg-slate-50/80 rounded-3xl p-6 border border-slate-100">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] mb-4 block">Diseño de Membrete</label>
+                        <div className="space-y-4">
+                            <select 
+                                value={selectedTemplate} 
+                                onChange={e => handleTemplateChange(e.target.value)}
+                                className="w-full bg-white border-none rounded-2xl py-3.5 px-4 text-xs font-black shadow-sm focus:ring-2 focus:ring-[var(--accent)] text-slate-700 cursor-pointer"
+                            >
+                                <option value="">Sin membrete (Blanco)</option>
+                                {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                            
+                            <div className="relative group">
+                                <input 
+                                    type="file" 
+                                    className="hidden" 
+                                    ref={fileInputRef} 
+                                    onChange={handleFileUpload} 
+                                    accept="image/*,application/pdf"
+                                />
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => fileInputRef.current.click()}
+                                        className="flex-1 bg-white border-2 border-dashed border-slate-200 hover:border-[var(--accent)] text-slate-400 hover:text-[var(--accent)] py-3 px-4 rounded-2xl transition-all text-[10px] font-black uppercase tracking-wider"
+                                    >
+                                        {previewFile ? previewFile.name : "Subir Nuevo (.png, .pdf)"}
+                                    </button>
+                                    {previewFile && (
+                                        <button 
+                                            onClick={applyMembrete}
+                                            className="bg-[var(--accent)] text-white p-3 rounded-2xl shadow-lg shadow-[var(--accent-shadow)] hover:scale-105 active:scale-95 transition-all"
+                                            title="Aplicar y Guardar"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {focusedElement && (
+                        <section className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl animate-in zoom-in-95 duration-500">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-rose-500 rounded-xl"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></div>
+                                <h3 className="text-xs font-black uppercase tracking-widest text-rose-100">Estilo de Fila</h3>
+                            </div>
+                            
+                            <div className="space-y-6">
+                                <div className="flex bg-white/10 p-1.5 rounded-2xl">
+                                    {[
+                                        { key: 'bold', icon: 'B' },
+                                        { key: 'italic', icon: 'I' },
+                                        { key: 'underline', icon: 'U' },
+                                        { key: 'strike', icon: 'S' }
+                                    ].map(s => (
+                                        <button 
+                                            key={s.key}
+                                            onClick={() => toggleStyle(s.key)}
+                                            className={`flex-1 py-2.5 rounded-xl text-sm font-black transition-all ${details.find(r => r.id === focusedElement.id)?.style[s.key] ? 'bg-white text-slate-900 shadow-lg' : 'hover:bg-white/5 text-slate-400'}`}
+                                        >
+                                            <span style={{ 
+                                                fontWeight: s.key === 'bold' ? '900' : 'normal',
+                                                fontStyle: s.key === 'italic' ? 'italic' : 'normal',
+                                                textDecoration: s.key === 'underline' ? 'underline' : s.key === 'strike' ? 'line-through' : 'none'
+                                            }}>{s.icon}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Fuente</label>
+                                        <select 
+                                            className="w-full bg-white/5 border-none rounded-xl py-2 px-3 text-xs font-bold text-white focus:ring-1 focus:ring-rose-500"
+                                            value={details.find(r => r.id === focusedElement.id)?.style.font}
+                                            onChange={e => updateStyle('font', e.target.value)}
+                                        >
+                                            <option value="Inter">Inter</option>
+                                            <option value="Montserrat">Montserrat</option>
+                                            <option value="Playfair Display">Serif Classical</option>
+                                            <option value="Dancing Script">Curssive</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Tamaño</label>
+                                        <select 
+                                            className="w-full bg-white/5 border-none rounded-xl py-2 px-3 text-xs font-bold text-white focus:ring-1 focus:ring-rose-500"
+                                            value={details.find(r => r.id === focusedElement.id)?.style.fontSize}
+                                            onChange={e => updateStyle('fontSize', e.target.value)}
+                                        >
+                                            {["8px", "10px", "12px", "14px", "16px", "20px"].map(z => <option key={z} value={z}>{z}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-white/10 flex gap-2">
+                                    <button 
+                                        onClick={() => applyStyleToAll('font', details.find(r => r.id === focusedElement.id)?.style.font)}
+                                        className="flex-1 bg-white/5 hover:bg-white/10 text-[9px] font-black py-2 rounded-xl transition-all border border-white/5"
+                                    >GLOBALIZAR FUENTE</button>
+                                    <button 
+                                        onClick={() => applyStyleToAll('fontSize', details.find(r => r.id === focusedElement.id)?.style.fontSize)}
+                                        className="flex-1 bg-white/5 hover:bg-white/10 text-[9px] font-black py-2 rounded-xl transition-all border border-white/5"
+                                    >GLOBALIZAR TAMAÑO</button>
+                                </div>
+                            </div>
+                        </section>
+                    )}
                 </div>
             </aside>
 
-            {/* Canvas Area - Sistema de Hojas Múltiples */}
             <main className="flex-1 overflow-auto py-10 px-4 flex flex-col gap-12 bg-slate-200/30">
                 {pages.map((pageRows, pageIdx) => (
                     <div 
@@ -581,7 +513,6 @@ const ProformaEditor = ({ onBack }) => {
                         }}
                         className="bg-white shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-sm overflow-hidden relative transition-all duration-700 ease-in-out hover:shadow-[0_60px_150px_rgba(0,0,0,0.15)] no-break-inside mx-auto"
                     >
-                        {/* Glass Overlay Contenido */}
                         <div 
                             className="relative z-10 w-full h-full flex flex-col antialiased"
                             style={{ 
@@ -591,7 +522,6 @@ const ProformaEditor = ({ onBack }) => {
                                 paddingRight: `${margins.right}cm` 
                             }}
                         >
-                            {/* CABECERA: Solo en la primera hoja */}
                             {pageIdx === 0 && (
                                 <>
                                     <div className="flex justify-between items-start mb-8">
@@ -616,23 +546,48 @@ const ProformaEditor = ({ onBack }) => {
                                             </div>
                                         </div>
                                         
-                                        <table className="border-collapse border border-slate-800 text-[10px] w-48 font-bold" style={{ marginTop: '-1.6cm' }}>
+                                        <table className="border-collapse border border-slate-800 text-[10px] w-64 font-bold" style={{ marginTop: '-1.6cm' }}>
                                             <tbody>
                                                 <tr>
-                                                    <td className="border border-slate-800 px-2 py-1 bg-slate-50">FECHA</td>
-                                                    <td className="border border-slate-800 px-2 py-1 text-center">{new Date().toLocaleDateString('es-ES')}</td>
+                                                    <td className="border border-slate-800 px-2 py-1 bg-slate-50 whitespace-nowrap w-32">FECHA</td>
+                                                    <td className="border border-slate-800 px-0 py-0 text-center relative group">
+                                                        <div className="flex items-center justify-center gap-1 group">
+                                                            <svg className="w-3 h-3 text-slate-400 group-hover:text-[var(--accent)] transition-colors no-print ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" />
+                                                            </svg>
+                                                            <input 
+                                                                type="date"
+                                                                className="w-full bg-transparent border-none p-1 text-center focus:ring-0 font-bold text-slate-700 cursor-pointer appearance-none uppercase" 
+                                                                value={quoteDate}
+                                                                onChange={e => setQuoteDate(e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                                 <tr>
-                                                    <td className="border border-slate-800 px-2 py-1 bg-slate-50">COTIZACIÓN #</td>
-                                                    <td className="border border-slate-800 px-2 py-1 text-center">502342</td>
+                                                    <td className="border border-slate-800 px-2 py-1 bg-slate-50 whitespace-nowrap">COTIZACIÓN #</td>
+                                                    <td className="border border-slate-800 px-0 py-0 text-center">
+                                                        <input 
+                                                            className="w-full bg-transparent border-none p-1 text-center focus:ring-0 font-bold text-slate-700" 
+                                                            value={quoteNumber}
+                                                            onChange={e => setQuoteNumber(e.target.value)}
+                                                        />
+                                                    </td>
                                                 </tr>
                                                 <tr>
-                                                    <td className="border border-slate-800 px-2 py-1 bg-slate-50">VÁLIDO POR DÍAS</td>
-                                                    <td className="border border-slate-800 px-2 py-1 text-center">15</td>
+                                                    <td className="border border-slate-800 px-2 py-1 bg-slate-50 whitespace-nowrap">VÁLIDO POR DÍAS</td>
+                                                    <td className="border border-slate-800 px-0 py-0 text-center">
+                                                        <input 
+                                                            type="number"
+                                                            className="w-full bg-transparent border-none p-1 text-center focus:ring-0 font-bold text-slate-700" 
+                                                            value={validDays}
+                                                            onChange={e => setValidDays(e.target.value)}
+                                                        />
+                                                    </td>
                                                 </tr>
                                                 <tr>
-                                                    <td className="border border-slate-800 px-2 py-1 bg-slate-50">VÁLIDO HASTA</td>
-                                                    <td className="border border-slate-800 px-2 py-1 text-center">25/03/2026</td>
+                                                    <td className="border border-slate-800 px-2 py-1 bg-slate-50 whitespace-nowrap">VÁLIDO HASTA</td>
+                                                    <td className="border border-slate-800 px-2 py-1 text-center">{validUntil}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -676,10 +631,8 @@ const ProformaEditor = ({ onBack }) => {
                                 </>
                             )}
 
-                            {/* Logo Spacer para hojas subsecuentes (evita solapamiento) */}
                             {pageIdx > 0 && <div style={{ height: '34px' }} className="w-full flex-shrink-0" />}
 
-                            {/* TABLA DE ÍTEMS: Paginada */}
                             <div className="flex-1">
                                 {pageRows.length > 0 && (
                                     <table className="w-full border-collapse border border-slate-800" style={{ tableLayout: 'fixed' }}>
@@ -714,44 +667,73 @@ const ProformaEditor = ({ onBack }) => {
                                         <tbody>
                                             {pageRows.map((row, rowIdx) => {
                                                 const globalIdx = details.findIndex(r => r.id === row.id);
-                                                // La altura real es el máximo entre lo manual y lo auto-calculado
                                                 const rowHeight = Math.max(13, manualRowHeights[row.id] || 0, autoRowHeights[row.id] || 0);
                                                 return (
                                                     <tr key={row.id} className="text-slate-800" style={{ height: rowHeight }}>
                                                         <td className="border border-slate-800 text-center text-[11px] font-bold" style={{ height: rowHeight }}>{globalIdx + 1}</td>
                                                         <td className="border border-slate-800 py-0 px-3 relative" style={{ height: rowHeight }}>
-                                                            <textarea 
-                                                                rows="1"
-                                                                className="w-full bg-transparent border-none focus:ring-0 p-0 resize-none overflow-hidden placeholder:text-slate-300 placeholder:italic"
-                                                                placeholder="Descripción del servicio o producto..."
-                                                                style={{
-                                                                    fontWeight: row.style?.bold ? '900' : 'bold',
-                                                                    fontStyle: row.style?.italic ? 'italic' : 'normal',
-                                                                    textDecoration: `${row.style?.underline ? 'underline' : ''} ${row.style?.strike ? 'line-through' : ''}`.trim(),
-                                                                    textAlign: row.style?.align || 'left',
-                                                                    fontSize: row.style?.fontSize || '12px',
-                                                                    fontFamily: row.style?.font ? `'${row.style.font}', sans-serif` : `${globalFont}, sans-serif`,
-                                                                    color: row.style?.color || '#1e293b',
-                                                                    lineHeight: row.style?.lineHeight || '1.2',
-                                                                    height: rowHeight
-                                                                }}
-                                                                value={row.description}
-                                                                onFocus={() => {
-                                                                    setFocusedElement({ id: row.id, field: "description" });
-                                                                    setLastFocusedId(row.id);
-                                                                }}
-                                                                onChange={e => {
-                                                                    handleDetailChange(row.id, "description", e.target.value);
-                                                                    
-                                                                    // Truco para que scrollHeight se recalcule hacia abajo:
-                                                                    const originalStyleHeight = e.target.style.height;
-                                                                    e.target.style.height = 'auto'; 
-                                                                    const contentHeight = Math.max(13, e.target.scrollHeight);
-                                                                    e.target.style.height = originalStyleHeight;
+                                                            <div className="flex items-center gap-1 group/item">
+                                                                <button 
+                                                                    onClick={() => setShowItemPicker(row.id)}
+                                                                    className="p-1 text-slate-300 hover:text-[var(--accent)] transition-colors opacity-0 group-hover/item:opacity-100 no-print"
+                                                                    title="Seleccionar del catálogo"
+                                                                >
+                                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                                                </button>
+                                                                <textarea 
+                                                                    rows="1"
+                                                                    className="w-full bg-transparent border-none focus:ring-0 p-0 resize-none overflow-hidden placeholder:text-slate-300 placeholder:italic"
+                                                                    placeholder="Descripción del servicio o producto..."
+                                                                    style={{
+                                                                        fontWeight: row.style?.bold ? '900' : 'bold',
+                                                                        fontStyle: row.style?.italic ? 'italic' : 'normal',
+                                                                        textDecoration: `${row.style?.underline ? 'underline' : ''} ${row.style?.strike ? 'line-through' : ''}`.trim(),
+                                                                        textAlign: row.style?.align || 'left',
+                                                                        fontSize: row.style?.fontSize || '12px',
+                                                                        fontFamily: row.style?.font ? `'${row.style.font}', sans-serif` : `${globalFont}, sans-serif`,
+                                                                        color: row.style?.color || '#1e293b',
+                                                                        lineHeight: row.style?.lineHeight || '1.2',
+                                                                        height: rowHeight
+                                                                    }}
+                                                                    value={row.description}
+                                                                    onFocus={() => {
+                                                                        setFocusedElement({ id: row.id, field: "description" });
+                                                                        setLastFocusedId(row.id);
+                                                                    }}
+                                                                    onChange={e => {
+                                                                        handleDetailChange(row.id, "description", e.target.value);
+                                                                        const originalStyleHeight = e.target.style.height;
+                                                                        e.target.style.height = 'auto'; 
+                                                                        const contentHeight = Math.max(13, e.target.scrollHeight);
+                                                                        e.target.style.height = originalStyleHeight;
+                                                                        setAutoRowHeights(prev => ({ ...prev, [row.id]: contentHeight }));
+                                                                    }}
+                                                                />
+                                                            </div>
 
-                                                                    setAutoRowHeights(prev => ({ ...prev, [row.id]: contentHeight }));
-                                                                }}
-                                                            />
+                                                            {showItemPicker === row.id && (
+                                                                <div className="absolute top-full left-0 z-[200] w-64 bg-white shadow-2xl rounded-xl border border-slate-200 mt-1 max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 no-print">
+                                                                    <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0 flex justify-between items-center">
+                                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catálogo</span>
+                                                                        <button onClick={() => setShowItemPicker(null)} className="text-slate-400 hover:text-rose-500"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                                    </div>
+                                                                    {availableItems.map(item => (
+                                                                        <button 
+                                                                            key={item.id}
+                                                                            onClick={() => selectItem(row.id, item)}
+                                                                            className="w-full text-left px-4 py-2.5 hover:bg-[var(--accent-soft)] transition-colors border-b border-slate-50 last:border-0 group/row"
+                                                                        >
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-xs font-black text-slate-700 group-hover/row:text-[var(--accent)]">{item.name}</span>
+                                                                                <div className="flex justify-between items-center mt-1">
+                                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase">{item.type}</span>
+                                                                                    <span className="text-[10px] font-black text-emerald-500">${item.price}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                             <div className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-slate-200" onMouseDown={e => handleMouseDownRow(e, row.id)} />
                                                         </td>
                                                         <td className="border border-slate-800 p-0 relative" style={{ height: rowHeight }}>
@@ -777,18 +759,15 @@ const ProformaEditor = ({ onBack }) => {
                                                                 }}
                                                                 onChange={e => {
                                                                     handleDetailChange(row.id, "marca", e.target.value);
-                                                                    
                                                                     const originalStyleHeight = e.target.style.height;
                                                                     e.target.style.height = 'auto';
                                                                     const contentHeight = Math.max(13, e.target.scrollHeight);
                                                                     e.target.style.height = originalStyleHeight;
-
                                                                     setAutoRowHeights(prev => ({ ...prev, [row.id]: contentHeight }));
                                                                 }}
                                                             />
                                                             <div className="absolute bottom-0 left-0 w-full h-1 cursor-row-resize hover:bg-slate-200" onMouseDown={e => handleMouseDownRow(e, row.id)} />
                                                         </td>
-
                                                         <td className="border border-slate-800 p-0">
                                                             <input 
                                                                 type="number"
@@ -852,7 +831,6 @@ const ProformaEditor = ({ onBack }) => {
                                             })}
                                         </tbody>
 
-                                        {/* FOOTER DE TABLA: Solo si esta página contiene el último ítem real de la lista */}
                                         {pageRows.some(row => row.id === details[details.length - 1]?.id) && (
                                             <tfoot>
                                                 <tr>
@@ -868,7 +846,6 @@ const ProformaEditor = ({ onBack }) => {
                                 )}
                             </div>
 
-                            {/* FOOTER: Solo en la ÚLTIMA HOJA */}
                             {pageIdx === pages.length - 1 && (
                                 <div className="mt-8 text-center text-[10px] italic font-medium text-slate-400 pb-4 no-break-inside">
                                     Si usted tiene alguna pregunta sobre esta cotización, por favor, póngase en contacto con nosotros.
@@ -880,11 +857,9 @@ const ProformaEditor = ({ onBack }) => {
                 ))}
             </main>
 
-            {/* Right Sidebar (Márgenes y Métricas) */}
             <aside className="w-full xl:w-72 flex flex-col gap-6 no-print">
                 <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2rem] p-6 sticky top-8 animate-in fade-in slide-in-from-right-4 duration-700">
                     <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--accent)] mb-6">Márgenes de Hoja</label>
-                    
                     <div className="space-y-6">
                         <section className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
                             <div className="grid grid-cols-2 gap-4 text-center">
@@ -906,18 +881,6 @@ const ProformaEditor = ({ onBack }) => {
                                 ))}
                             </div>
                             <p className="mt-3 text-[9px] text-slate-400 italic text-center">Valores en Centímetros (cm)</p>
-                        </section>
-
-                        <section className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mostrar Términos</h3>
-                                <button 
-                                    onClick={() => setShowTerms(!showTerms)}
-                                    className={`w-8 h-4 rounded-full relative transition-all ${showTerms ? 'bg-[var(--accent)]' : 'bg-slate-200'}`}
-                                >
-                                    <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${showTerms ? 'translate-x-4' : ''}`} />
-                                </button>
-                            </div>
                         </section>
 
                         <section className="bg-[var(--accent-soft)] rounded-2xl p-5 border border-[var(--accent-soft)]">
@@ -944,15 +907,6 @@ const ProformaEditor = ({ onBack }) => {
                         </section>
 
                         <div className="flex flex-col gap-3">
-                            <button 
-                                onClick={addRow}
-                                className="w-full bg-white border-2 border-dashed border-[var(--accent-soft)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] text-[var(--accent)] font-black py-3 rounded-xl transition-all active:scale-95 text-[10px] tracking-widest flex items-center justify-center gap-2 mb-2"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                                AGREGAR ÍTEM
-                            </button>
                             <button className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-black py-4 rounded-xl shadow-xl shadow-[var(--accent-shadow)] active:scale-95 transition-all text-xs">
                                 REGISTRAR PROFORMA
                             </button>
