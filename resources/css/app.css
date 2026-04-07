@@ -89,29 +89,35 @@
     }
 
     /* Contenedor principal sin márgenes adicionales */
-    main, #proforma-editor {
+    main, #proforma-editor, .flex-1 {
         padding: 0 !important;
         margin: 0 !important;
         width: 100% !important;
         display: block !important;
+        flex: none !important;
+        background: transparent !important;
     }
 
     /* La "hoja" debe ocupar toda la página física */
-    .bg-white.shadow-\[0_40px_100px_rgba\(0\,0\,0\,0\.15\)\] {
+    .proforma-page {
         box-shadow: none !important;
         border: none !important;
-        margin: 0 !important;
+        margin: 0 auto !important; /* Centrado horizontal */
         padding: 0 !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
+        position: relative !important;
         width: 210mm !important; /* Ancho real A4 */
         height: 297mm !important; /* Alto real A4 */
         min-height: 297mm !important;
         max-height: 297mm !important;
         border-radius: 0 !important;
         transform: none !important;
-        overflow: hidden !important; /* Evita que crezca si el contenido sobra un poco */
+        overflow: hidden !important; 
+        background-color: white !important; /* FIX: Solo fondo de color para dejar pasar la imagen */
+        background-size: 100% 100% !important;
+        background-repeat: no-repeat !important;
+        print-color-adjust: exact !important;
+        -webkit-print-color-adjust: exact !important;
+        page-break-after: always !important;
     }
 
     /* Asegurar que el fondo del membrete sea de alta calidad e imprima */

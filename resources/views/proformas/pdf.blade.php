@@ -209,18 +209,22 @@
             </tbody>
         </table>
 
+        <div style="margin-top: 20px; width: 60%; float: left; font-style: italic; font-size: 11px; color: #4a5568; padding-top: 10px;">
+            {{ $proforma->total_in_words }}
+        </div>
+
         <table class="totals">
             <tr>
                 <td class="text-right"><strong>Subtotal:</strong></td>
-                <td class="text-right">{{ number_format($proforma->subtotal, 2) }}</td>
+                <td class="text-right">{{ number_format($proforma->subtotal, 2) }} BS.</td>
             </tr>
             <tr>
-                <td class="text-right"><strong>Dcto:</strong></td>
-                <td class="text-right">{{ number_format($proforma->discount, 2) }}</td>
+                <td class="text-right"><strong>Descuento:</strong></td>
+                <td class="text-right">{{ number_format($proforma->discount, 2) }} BS.</td>
             </tr>
             <tr>
                 <td class="text-right final-total">Total:</td>
-                <td class="text-right final-total">{{ number_format($proforma->total, 2) }}</td>
+                <td class="text-right final-total">{{ number_format($proforma->total, 2) }} BS.</td>
             </tr>
         </table>
 
